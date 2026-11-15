@@ -53,6 +53,27 @@ class DsdRouteDay(models.Model):
              'warehouse at the end of the day.',
     )
     settlement_ids = fields.One2many('dsd.settlement', 'route_day_id')
+    company_id = fields.Many2one(related='warehouse_id.company_id')
+    currency_id = fields.Many2one(related='company_id.currency_id')
+    total_sales = fields.Monetary(
+        compute='_compute_metrics', store=True,
+        help='Posted invoice total of all van sales and presales of the day.')
+    cash_collected = fields.Monetary(
+        compute='_compute_metrics', store=True,
+        help='Cash registered on the visits of this day.')
+    done_visit_count = fields.Integer(compute='_compute_metrics', store=True)
+
+    @api.depends('visit_ids.invoice_id.state', 'visit_ids.invoice_id.amount_total',
+                 'visit_ids.payment_ids.amount', 'visit_ids.state')
+    def _compute_metrics(self):
+        for day in self:
+            invoices = day.visit_ids.invoice_id.filtered(
+                lambda m: m.state == 'posted')
+            day.total_sales = sum(invoices.mapped('amount_total'))
+            day.cash_collected = sum(
+                day.visit_ids.payment_ids.mapped('amount'))
+            day.done_visit_count = len(day.visit_ids.filtered(
+                lambda v: v.state == 'done'))
 
     _route_date_uniq = models.Constraint(
         'unique(route_id, date)',
@@ -344,9 +365,14 @@ class DsdVisit(models.Model):
         env = self.env
         day = self.route_day_id
 
-        # 1. Ship from the van
+        # 1. Ship from the van: prefill any unpicked quantity with the full
+        #    demand — storable van lines are never reserved (source location
+        #    is retargeted after confirmation), so without this the
+        #    validation would see zero quantities.
         delivery = self.delivery_id
         if delivery and delivery.state != 'done':
+            for move in delivery.move_ids.filtered(lambda m: not m.quantity):
+                move.quantity = move.product_uom_qty
             delivery.move_ids.picked = True
             res = delivery.button_validate()
             if isinstance(res, dict) and res.get('res_model') and res.get('res_id'):
