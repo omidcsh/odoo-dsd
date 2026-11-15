@@ -36,6 +36,18 @@ class DsdRoute(models.Model):
         'res.users', string='Default Driver',
         domain=[('share', '=', False)],
     )
+    cash_journal_id = fields.Many2one(
+        'account.journal', string='Cash Journal',
+        domain=[('type', '=', 'cash')],
+        help='Journal used to register cash collected on this route. '
+             'Falls back to the first cash journal when empty.',
+    )
+    variance_account_id = fields.Many2one(
+        'account.account', string='Settlement Variance Account',
+        domain=[('account_type', '=', 'expense')],
+        help='Expense account for cash or stock differences posted at '
+             'settlement.',
+    )
     stop_ids = fields.One2many('dsd.route.stop', 'route_id', string='Stops')
     stop_count = fields.Integer(compute='_compute_stop_count')
     route_day_ids = fields.One2many('dsd.route.day', 'route_id', string='Route Days')

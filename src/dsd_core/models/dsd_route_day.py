@@ -197,6 +197,15 @@ class DsdVisit(models.Model):
     )
     payment_ids = fields.Many2many('account.payment', string='Payments')
     signature = fields.Binary('Proof of Delivery', attachment=True)
+    sale_kind = fields.Selection(
+        selection=[
+            ('presale', 'Presale'),
+            ('van_sale', 'Van Sale'),
+        ],
+        string='Sale Kind',
+        help='Which action created the linked sale order: a van sale ships '
+             'from the van, a presale order is fulfilled from the warehouse.',
+    )
 
     # ------------------------------------------------------------------
     # Visit workflow
@@ -253,3 +262,133 @@ class DsdVisit(models.Model):
             visit.return_id = picking
             return picking._open_form()
         return True
+
+    # ------------------------------------------------------------------
+    # Van sale & presale
+    # ------------------------------------------------------------------
+
+    def _create_visit_order(self, kind):
+        """Shared order creation for van sales and presale orders."""
+        self.ensure_one()
+        if self.state != 'pending':
+            raise UserError(self.env._(
+                'Sales can only be taken while the visit is pending.'))
+        if self.sale_order_id or self.delivery_id:
+            raise UserError(self.env._(
+                'This visit already has a sale order or delivery.'))
+        day = self.route_day_id
+        route = day.route_id
+        if kind == 'van_sale':
+            if route.mode == 'presale':
+                raise UserError(self.env._(
+                    'This is a presale route — van sales are not allowed.'))
+            if not day.van_location_id:
+                raise UserError(self.env._(
+                    'The route has no van location for a van sale.'))
+        elif route.mode == 'van_sales':
+            raise UserError(self.env._(
+                'This is a van sales route — only van sales are allowed.'))
+        order = self.env['sale.order'].create({
+            'partner_id': self.partner_id.id,
+            'warehouse_id': day.warehouse_id.id,
+            'origin': self.env._('%(day)s — %(store)s',
+                                 day=day.name,
+                                 store=self.partner_id.display_name),
+        })
+        self.write({
+            'sale_order_id': order.id,
+            'sale_kind': kind,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'res_id': order.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_start_van_sale(self):
+        """Start a van sale: creates the draft sale order to fill in."""
+        return self._create_visit_order('van_sale')
+
+    def action_create_presale(self):
+        """Take a presale order fulfilled later from the warehouse."""
+        return self._create_visit_order('presale')
+
+    def action_complete_van_sale(self):
+        """One click: ship from the van, invoice, and register the cash."""
+        self.ensure_one()
+        order = self.sale_order_id
+        if self.sale_kind != 'van_sale' or not order:
+            raise UserError(self.env._(
+                'Start a van sale on this visit first.'))
+        if order.state != 'sale':
+            raise UserError(self.env._(
+                'Confirm the sale order %(order)s before completing the '
+                'van sale.', order=order.name,
+            ))
+        env = self.env
+        day = self.route_day_id
+
+        # 1. Ship from the van
+        delivery = self.delivery_id
+        if delivery and delivery.state != 'done':
+            delivery.move_ids.picked = True
+            res = delivery.button_validate()
+            if isinstance(res, dict) and res.get('res_model') and res.get('res_id'):
+                wizard = env[res['res_model']].browse(res['res_id'])
+                if res['res_model'] == 'stock.backorder.confirmation':
+                    wizard.process()
+                elif res['res_model'] == 'stock.zero.demand.confirmation':
+                    wizard.process()
+
+        # 2. Invoice
+        if not self.invoice_id:
+            invoice = order._create_invoices(final=True)
+            invoice.action_post()
+            self.invoice_id = invoice
+
+        # 3. Register the cash against the route's journal. The payment's
+        #    counterpart is moved onto the invoice's receivable account
+        #    (journals book on an outstanding account, which cannot
+        #    reconcile with the invoice) and matched explicitly.
+        invoice = self.invoice_id
+        company = day.warehouse_id.company_id
+        journal = day.route_id.cash_journal_id or env['account.journal'].search(
+            [('type', '=', 'cash'), ('company_id', '=', company.id)], limit=1)
+        if not journal:
+            raise UserError(self.env._(
+                'No cash journal found for company %(company)s — set one on '
+                'the route.', company=company.name,
+            ))
+        if journal.company_id != company:
+            raise UserError(self.env._(
+                'The route cash journal belongs to %(journal_company)s but '
+                'the route day runs in %(company)s.',
+                journal_company=journal.company_id.name,
+                company=company.name,
+            ))
+        payment = env['account.payment'].create({
+            'payment_type': 'inbound',
+            'partner_type': 'customer',
+            'partner_id': order.partner_id.id,
+            'journal_id': journal.id,
+            'amount': invoice.amount_residual,
+            'currency_id': invoice.currency_id.id,
+            'date': day.date,
+            'memo': invoice.name,
+        })
+        payment.action_post()
+        _liquidity, counterpart, _writeoff = payment._seek_for_lines()
+        invoice_receivable = invoice.line_ids.filtered(
+            lambda l: l.account_id.account_type == 'asset_receivable')
+        counterpart.write({'account_id': invoice_receivable.account_id.id})
+        (counterpart + invoice_receivable).reconcile()
+        self.payment_ids = [(4, payment.id)]
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id': self.invoice_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }

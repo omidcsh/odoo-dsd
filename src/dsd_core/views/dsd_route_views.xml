@@ -51,6 +51,14 @@
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                     </group>
+                    <group string="Settlement">
+                        <group>
+                            <field name="cash_journal_id"/>
+                        </group>
+                        <group>
+                            <field name="variance_account_id"/>
+                        </group>
+                    </group>
                     <notebook>
                         <page name="stops" string="Stops">
                             <field name="stop_ids">

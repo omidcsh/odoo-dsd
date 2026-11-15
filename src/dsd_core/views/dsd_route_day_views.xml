@@ -123,9 +123,19 @@
                 <header>
                     <field name="state" widget="statusbar"
                            statusbar_visible="pending,done"/>
+                    <button name="action_start_van_sale" type="object"
+                            string="Van Sale" class="btn-primary"
+                            invisible="state != 'pending' or sale_order_id or delivery_id or route_day_id.route_id.mode == 'presale'"/>
+                    <button name="action_create_presale" type="object"
+                            string="Presale Order"
+                            invisible="state != 'pending' or sale_order_id or delivery_id or route_day_id.route_id.mode == 'van_sales'"/>
+                    <button name="action_complete_van_sale" type="object"
+                            string="Complete Van Sale" class="btn-primary"
+                            invisible="sale_kind != 'van_sale' or not sale_order_id or sale_order_id.state != 'sale' or state != 'pending'"
+                            help="Ship from the van, invoice and register the cash"/>
                     <button name="action_deliver" type="object"
-                            string="Deliver from Van" class="btn-primary"
-                            invisible="state != 'pending' or delivery_id"/>
+                            string="Deliver from Van"
+                            invisible="state != 'pending' or delivery_id or sale_order_id"/>
                     <button name="action_take_return" type="object"
                             string="Take Return"
                             invisible="state != 'pending' or return_id"/>
@@ -136,6 +146,7 @@
                             <field name="route_day_id"/>
                             <field name="sequence"/>
                             <field name="partner_id"/>
+                            <field name="sale_kind" invisible="not sale_kind"/>
                             <field name="skip_reason"
                                    invisible="state != 'skipped'"/>
                         </group>

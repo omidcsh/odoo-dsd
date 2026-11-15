@@ -2,10 +2,11 @@
 
 - **Date:** 2026-11-15 · **Target stack:** Odoo 20.0 Community, Docker (`~/odoo-docker`),
   database `odoo` (demo data on)
-- **Progress:** Phase 0–2 delivered 2026-11-15 — `fleet`/`stock_fleet` installed;
-  `dsd_core` (`src/dsd_core`) now covers routes/stops (phase 1) **and** route
-  days, visits, and the day-generation wizard (phase 2), 7/7 tests green, live
-  smoke run created `RD/2026/0004` with 3 pending visits.
+- **Progress:** Phase 0–3 delivered 2026-11-15 — routes/stops (1), route days,
+  visits & generation wizard (2), and van load-out / per-visit delivery / stock
+  return with POD (3). 11/11 tests green. Live smoke: `RD/2026/0004` loaded,
+  delivery to Acme validated, van stock reconciled 6→2. `stock_sms` uninstalled
+  (SMS-on-delivery prompts block picking validation). Next: Phase 4 van sale.
 - **Companion ADRs:** [001 build on standard apps](adr/ADR-001-build-on-odoo-standard-apps.md) ·
   [002 van = stock location](adr/ADR-002-van-as-stock-location.md) ·
   [003 route & visit models](adr/ADR-003-route-and-visit-model.md) ·

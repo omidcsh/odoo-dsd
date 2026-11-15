@@ -27,6 +27,12 @@
         <field name="is_dsd_van" eval="True"/>
     </record>
 
+    <record id="cash_journal_demo" model="account.journal">
+        <field name="name">Route Cash</field>
+        <field name="type">cash</field>
+        <field name="code">RCASH</field>
+    </record>
+
     <record id="route_demo_a" model="dsd.route">
         <field name="name">Route A — City Center</field>
         <field name="mode">van_sales</field>
@@ -34,6 +40,7 @@
         <field name="vehicle_id" ref="fleet_vehicle_demo"/>
         <field name="van_location_id" ref="location_van_01"/>
         <field name="driver_id" ref="base.user_admin"/>
+        <field name="cash_journal_id" ref="cash_journal_demo"/>
     </record>
     <record id="route_demo_a_stop_1" model="dsd.route.stop">
         <field name="route_id" ref="route_demo_a"/>
