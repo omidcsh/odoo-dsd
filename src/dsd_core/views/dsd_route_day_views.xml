@@ -126,15 +126,17 @@
                 <header>
                     <field name="state" widget="statusbar"
                            statusbar_visible="pending,done"/>
+                    <field name="route_mode" invisible="1"/>
+                    <field name="sale_state" invisible="1"/>
                     <button name="action_start_van_sale" type="object"
                             string="Van Sale" class="btn-primary"
-                            invisible="state != 'pending' or sale_order_id or delivery_id or route_day_id.route_id.mode == 'presale'"/>
+                            invisible="state != 'pending' or sale_order_id or delivery_id or route_mode == 'presale'"/>
                     <button name="action_create_presale" type="object"
                             string="Presale Order"
-                            invisible="state != 'pending' or sale_order_id or delivery_id or route_day_id.route_id.mode == 'van_sales'"/>
+                            invisible="state != 'pending' or sale_order_id or delivery_id or route_mode == 'van_sales'"/>
                     <button name="action_complete_van_sale" type="object"
                             string="Complete Van Sale" class="btn-primary"
-                            invisible="sale_kind != 'van_sale' or not sale_order_id or sale_order_id.state != 'sale' or state != 'pending'"
+                            invisible="sale_kind != 'van_sale' or not sale_order_id or sale_state != 'sale' or state != 'pending'"
                             help="Ship from the van, invoice and register the cash"/>
                     <button name="action_deliver" type="object"
                             string="Deliver from Van"

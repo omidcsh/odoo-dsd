@@ -241,6 +241,10 @@ class DsdVisit(models.Model):
         help='Which action created the linked sale order: a van sale ships '
              'from the van, a presale order is fulfilled from the warehouse.',
     )
+    # Server-side relateds so view modifiers never traverse m2o chains
+    # (the web client only loads fields declared in the view).
+    route_mode = fields.Selection(related='route_day_id.route_id.mode')
+    sale_state = fields.Selection(related='sale_order_id.state')
 
     # ------------------------------------------------------------------
     # Visit workflow
