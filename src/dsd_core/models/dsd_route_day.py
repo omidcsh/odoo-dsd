@@ -278,9 +278,9 @@ class DsdVisit(models.Model):
     def action_take_return(self):
         """Take goods/empties back from this store into the van."""
         for visit in self:
-            if visit.state != 'pending':
+            if visit.state == 'skipped':
                 raise UserError(self.env._(
-                    'Returns can only be taken while the visit is pending.'))
+                    'Returns cannot be taken on a skipped visit.'))
             day = visit.route_day_id
             warehouse = day.warehouse_id
             picking = self.env['stock.picking'].create({

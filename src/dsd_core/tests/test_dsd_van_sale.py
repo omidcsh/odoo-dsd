@@ -116,8 +116,8 @@ class TestDsdVanSale(TransactionCase):
         delivery = visit.delivery_id
         self.assertEqual(delivery.location_id, self.warehouse.lot_stock_id,
                          'Presale orders must be fulfilled from the warehouse')
-        self.assertEqual(visit.state, 'pending',
-                         'Presale visits stay pending until closed manually')
+        self.assertEqual(visit.state, 'done',
+                         'Presale visit completes on order capture')
 
     def test_complete_requires_confirmed_order(self):
         self.visit.action_start_van_sale()

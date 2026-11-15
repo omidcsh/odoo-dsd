@@ -57,3 +57,26 @@
 - Sign-off recorded in this file (name + date)
 
 **Sign-off:** ________________ (date: ________)
+
+## 5. Execution log — technical dry run 2026-11-16 (ZCode)
+
+All steps executed programmatically on live `odoo` DB as **Route B — North**
+(mixed, VAN-02) → **RD/2026/0198**, 4 stops, committed. Result: **15/15 PASS**
+(full transcript in git history). The dry run found and fixed two real design
+gaps before human UAT:
+
+1. **Take Return was blocked after a delivery** — the delivery validation
+   auto-closed the visit, so a driver could not take empties back at the same
+   stop. Fix: returns now allowed on pending **and** done visits (still
+   blocked on skipped). UAT step 2.6 updated accordingly.
+2. **Presale visits could never close** — their delivery ships days later,
+   which permanently blocked End Route. Fix: a presale visit completes when
+   its order is confirmed (order capture = stop done; fulfillment tracked via
+   the linked delivery). UAT step 2.3 expected result updated.
+
+Also verified in this run: van stock reconciliation (water 10 → 0 via sale/
+delivery/return), leftover snapshot caught 2 crates left in the van at
+settlement, cash variance entry posted Dr 7.5, settlement PDF generated
+(29.7 KB, `%PDF`). Note: `wkhtmltopdf` logs a network-asset warning when the
+server is stopped during headless runs — PDF still renders; check headers on
+a running server during human UAT.
