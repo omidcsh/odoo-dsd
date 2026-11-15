@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_dsd_settlement" model="ir.actions.report">
+        <field name="name">Settlement Sheet</field>
+        <field name="model">dsd.settlement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">dsd_core.report_dsd_settlement</field>
+        <field name="binding_model_id" ref="model_dsd_settlement"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_dsd_settlement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 class="mt16">
+                            Settlement — <t t-out="doc.route_day_id.name"/>
+                        </h2>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>Route:</strong>
+                                <t t-out="doc.route_day_id.route_id.name"/><br/>
+                                <strong>Date:</strong>
+                                <t t-out="doc.route_day_id.date"/><br/>
+                                <strong>Driver:</strong>
+                                <t t-out="doc.route_day_id.driver_id.name or ''"/><br/>
+                                <strong>Vehicle:</strong>
+                                <t t-out="doc.route_day_id.vehicle_id.name or ''"/>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Expected cash</td>
+                                        <td class="text-end">
+                                            <span t-out="doc.expected_cash"/>
+                                            <span t-out="doc.currency_id.symbol"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Counted cash</td>
+                                        <td class="text-end">
+                                            <span t-out="doc.counted_cash"/>
+                                            <span t-out="doc.currency_id.symbol"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-att-class="'text-danger fw-bold' if doc.cash_diff else ''">
+                                        <td>Difference</td>
+                                        <td class="text-end">
+                                            <span t-out="doc.cash_diff"/>
+                                            <span t-out="doc.currency_id.symbol"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <h4>Visits</h4>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Store</th>
+                                    <th>Status</th>
+                                    <th>Invoice</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.route_day_id.visit_ids.sorted('sequence')" t-as="visit">
+                                    <td t-out="visit.sequence"/>
+                                    <td t-out="visit.partner_id.name"/>
+                                    <td t-out="visit.state"/>
+                                    <td t-out="visit.invoice_id.name or ''"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h4>Van leftover stock</h4>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.leftover_line_ids" t-as="line">
+                                    <td t-out="line.product_id.name"/>
+                                    <td class="text-end" t-out="line.quantity"/>
+                                </tr>
+                                <tr t-if="not doc.leftover_line_ids">
+                                    <td colspan="2" class="text-muted">Van returned empty.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                Driver signature: ______________________
+                            </div>
+                            <div class="col-6">
+                                Supervisor: ______________________
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

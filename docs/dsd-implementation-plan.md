@@ -2,11 +2,12 @@
 
 - **Date:** 2026-11-15 · **Target stack:** Odoo 20.0 Community, Docker (`~/odoo-docker`),
   database `odoo` (demo data on)
-- **Progress:** Phase 0–3 delivered 2026-11-15 — routes/stops (1), route days,
-  visits & generation wizard (2), and van load-out / per-visit delivery / stock
-  return with POD (3). 11/11 tests green. Live smoke: `RD/2026/0004` loaded,
-  delivery to Acme validated, van stock reconciled 6→2. `stock_sms` uninstalled
-  (SMS-on-delivery prompts block picking validation). Next: Phase 4 van sale.
+- **Progress:** Phase 0–4 delivered 2026-11-15 — routes/stops (1), route days,
+  visits & generation wizard (2), van load-out / per-visit delivery / stock
+  return with POD (3), and van sales + presales with cash collection (4).
+  15/15 tests green. Live smokes: `RD/2026/0004` loaded/delivered/settling;
+  van sale on Gemini Furniture: `WH/OUT/00123` from VAN-01 → `INV/2026/00010`
+  posted → cash reconciled. Next: Phase 5 settlement wizard.
 - **Companion ADRs:** [001 build on standard apps](adr/ADR-001-build-on-odoo-standard-apps.md) ·
   [002 van = stock location](adr/ADR-002-van-as-stock-location.md) ·
   [003 route & visit models](adr/ADR-003-route-and-visit-model.md) ·

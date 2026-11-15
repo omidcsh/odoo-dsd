@@ -79,13 +79,20 @@ class TestDsdRouteDayOps(TransactionCase):
         self.day.action_end_route()
         self.assertEqual(self.day.state, 'done')
 
-        # Return unsold stock to warehouse; closing it settles the day
+        # Return unsold stock to warehouse; settlement then closes the day
         self.day.action_create_stock_return()
         stock_return = self.day.return_picking_id
         self.assertEqual(stock_return.location_id, self.van_location)
         self.assertEqual(
             stock_return.location_dest_id, self.warehouse.lot_stock_id)
         self._validate(stock_return)
+        self.assertEqual(self.day.state, 'done',
+                         'Return alone must not settle the day')
+
+        settle_result = self.day.action_settle()
+        settlement = self.env['dsd.settlement'].browse(settle_result['res_id'])
+        settlement.counted_cash = settlement.expected_cash
+        settlement.action_post_settlement()
         self.assertEqual(self.day.state, 'settled')
 
     def test_start_route_requires_validated_load(self):

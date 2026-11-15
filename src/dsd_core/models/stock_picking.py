@@ -17,8 +17,8 @@ class StockPicking(models.Model):
     def button_validate(self):
         res = super().button_validate()
         # Keep DSD documents in sync when their pickings complete: the van
-        # load marks the route day loaded, the store return settles it, and
-        # a validated delivery closes its visit.
+        # load marks the route day loaded and a validated delivery closes
+        # its visit. Settling is an explicit act on the settlement record.
         done = self.filtered(lambda p: p.state == 'done')
         if done:
             env = self.env
@@ -26,10 +26,6 @@ class StockPicking(models.Model):
                 [('load_picking_id', 'in', done.ids)])
             load_days.filtered(
                 lambda d: d.state == 'draft').write({'state': 'loaded'})
-            return_days = env['dsd.route.day'].search(
-                [('return_picking_id', 'in', done.ids)])
-            return_days.filtered(
-                lambda d: d.state == 'done').write({'state': 'settled'})
             visits = env['dsd.visit'].search(
                 [('delivery_id', 'in', done.ids)])
             visits.filtered(

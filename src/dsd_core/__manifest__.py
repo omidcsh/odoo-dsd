@@ -19,6 +19,8 @@ Foundations for Direct Store Delivery on Odoo:
         'wizard/dsd_route_day_generate_views.xml',
         'views/dsd_route_views.xml',
         'views/dsd_route_day_views.xml',
+        'views/dsd_settlement_views.xml',
+        'reports/dsd_settlement_report.xml',
     ],
     'demo': [
         'demo/dsd_demo.xml',

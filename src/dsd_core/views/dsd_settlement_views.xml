@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dsd_settlement_form" model="ir.ui.view">
+        <field name="name">dsd.settlement.form</field>
+        <field name="model">dsd.settlement</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,posted"/>
+                    <button name="action_post_settlement" type="object"
+                            string="Post &amp; Close Route" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Route Day">
+                            <field name="route_day_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Cash">
+                            <field name="expected_cash"/>
+                            <field name="counted_cash"/>
+                            <field name="cash_diff"
+                                   decoration-danger="cash_diff != 0"/>
+                            <field name="variance_move_id"
+                                   invisible="not variance_move_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="leftover" string="Van Leftover">
+                            <field name="leftover_line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="notes" string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dsd_settlement_list" model="ir.ui.view">
+        <field name="name">dsd.settlement.list</field>
+        <field name="model">dsd.settlement</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="route_day_id"/>
+                <field name="expected_cash"/>
+                <field name="counted_cash"/>
+                <field name="cash_diff" decoration-danger="cash_diff != 0"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'posted'"/>
+            </list>
+        </field>
+    </record>
+</odoo>

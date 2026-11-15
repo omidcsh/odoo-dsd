@@ -42,6 +42,9 @@
                     <button name="action_create_stock_return" type="object"
                             string="Return Stock"
                             invisible="state not in ('in_progress', 'done')"/>
+                    <button name="action_settle" type="object"
+                            string="Settle Route Day" class="btn-primary"
+                            invisible="state != 'done' or settlement_ids"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">

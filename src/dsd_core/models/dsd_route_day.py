@@ -52,6 +52,7 @@ class DsdRouteDay(models.Model):
         help='Internal transfer returning unsold goods from the van to the '
              'warehouse at the end of the day.',
     )
+    settlement_ids = fields.One2many('dsd.settlement', 'route_day_id')
 
     _route_date_uniq = models.Constraint(
         'unique(route_id, date)',
@@ -137,6 +138,19 @@ class DsdRouteDay(models.Model):
                 count=len(pending),
             ))
         day.state = 'done'
+
+    def action_settle(self):
+        """Open (or create) the end-of-day settlement for this route day."""
+        day = self._require_single()
+        if day.state != 'done':
+            raise UserError(self.env._(
+                'Only a completed route day can be settled.'))
+        settlement = day.settlement_ids[:1]
+        if not settlement:
+            settlement = self.env['dsd.settlement'].create({
+                'route_day_id': day.id,
+            })
+        return settlement._open_form()
 
     def action_create_stock_return(self):
         """End-of-day internal transfer returning unsold stock to the warehouse."""

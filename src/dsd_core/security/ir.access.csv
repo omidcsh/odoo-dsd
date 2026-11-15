@@ -5,3 +5,5 @@ access_dsd_route_stop_user,dsd.route.stop.user,dsd.route.stop,group_dsd_user,cru
 access_dsd_route_day_user,dsd.route.day.user,dsd.route.day,group_dsd_user,crud,
 access_dsd_visit_user,dsd.visit.user,dsd.visit,group_dsd_user,crud,
 access_dsd_route_day_generate_user,dsd.route.day.generate.wizard.user,dsd.route.day.generate.wizard,group_dsd_user,crud,
+access_dsd_settlement_user,dsd.settlement.user,dsd.settlement,group_dsd_user,crud,
+access_dsd_settlement_line_user,dsd.settlement.line.user,dsd.settlement.line,group_dsd_user,crud,
