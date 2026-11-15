@@ -2,13 +2,14 @@
 
 - **Date:** 2026-11-15 · **Target stack:** Odoo 20.0 Community, Docker (`~/odoo-docker`),
   database `odoo` (demo data on)
-- **Progress:** Phase 0–5 delivered 2026-11-15 — routes/stops (1), route days,
-  visits & generation wizard (2), van load-out / delivery / returns with POD (3),
-  van sales + presales with cash collection (4), and end-of-day settlement with
-  cash-variance posting + settlement sheet PDF (5). 18/18 tests green. Live
-  smoke: `RD/2026/0004` fully settled — expected 100, counted 95, variance
-  entry `RCASH/2026/00001`. Remaining: Phase 6 (responsive pass, dashboards)
-  and Phase 7 (UAT/rollout).
+- **Progress:** **Phases 0–7 COMPLETE (2026-11-16) — rollout-ready.**
+  Full DSD loop live (routes → visit lists → load-out → deliveries/van
+  sales/returns → settlement with variance posting + PDF), kanban + reporting,
+  19/19 tests green, backup/restore drill PASS (`odoo_uat` sandbox kept),
+  clean-install drill PASS (demo-less DB), UAT script & driver checklist in
+  [uat-plan.md](uat-plan.md), ops procedures in [runbook.md](runbook.md).
+  Go-live blockers are organizational only (real master data, localization,
+  device strategy) — see runbook checklist.
 - **Companion ADRs:** [001 build on standard apps](adr/ADR-001-build-on-odoo-standard-apps.md) ·
   [002 van = stock location](adr/ADR-002-van-as-stock-location.md) ·
   [003 route & visit models](adr/ADR-003-route-and-visit-model.md) ·
