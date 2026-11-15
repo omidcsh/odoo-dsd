@@ -1,6 +1,11 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+WEEKDAY_FIELDS = (
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+    'saturday', 'sunday',
+)
+
 
 class DsdRoute(models.Model):
     _name = 'dsd.route'
@@ -73,6 +78,23 @@ class DsdRoute(models.Model):
             'domain': [('route_id', '=', self.id)],
             'context': {'default_route_id': self.id},
         }
+
+    def _create_route_day(self, date):
+        """Create a route day for `date`, snapshotting the stops scheduled
+        on that weekday into visits. Shared by the day and week wizards."""
+        self.ensure_one()
+        weekday_field = WEEKDAY_FIELDS[date.weekday()]
+        stops = self.stop_ids.filtered(weekday_field)
+        day = self.env['dsd.route.day'].create({
+            'route_id': self.id,
+            'date': date,
+        })
+        self.env['dsd.visit'].create([{
+            'route_day_id': day.id,
+            'partner_id': stop.partner_id.id,
+            'sequence': stop.sequence,
+        } for stop in stops])
+        return day
 
     @api.constrains('mode', 'van_location_id')
     def _check_van_location(self):

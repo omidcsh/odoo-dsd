@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dsd_week_plan_form" model="ir.ui.view">
+        <field name="name">dsd.week.plan.wizard.form</field>
+        <field name="model">dsd.week.plan.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Plan Visits for a Week">
+                <group>
+                    <group>
+                        <field name="week_start"/>
+                        <field name="route_ids" widget="many2many_tags"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_plan_week" type="object"
+                            string="Plan Week" class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dsd_week_plan" model="ir.actions.act_window">
+        <field name="name">Plan Visits for a Week</field>
+        <field name="res_model">dsd.week.plan.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

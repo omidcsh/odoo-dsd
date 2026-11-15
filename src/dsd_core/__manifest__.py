@@ -17,6 +17,7 @@ Foundations for Direct Store Delivery on Odoo:
         'security/ir.access.csv',
         'data/ir_sequence_data.xml',
         'wizard/dsd_route_day_generate_views.xml',
+        'wizard/dsd_week_plan_views.xml',
         'views/dsd_route_views.xml',
         'views/dsd_route_day_views.xml',
         'views/dsd_settlement_views.xml',

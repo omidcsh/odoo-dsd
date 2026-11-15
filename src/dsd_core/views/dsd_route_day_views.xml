@@ -307,8 +307,14 @@
               action="action_dsd_route_day"
               sequence="5"/>
 
+    <menuitem id="menu_dsd_week_plan"
+              name="Plan Week"
+              parent="menu_dsd_root"
+              action="dsd_core.action_dsd_week_plan"
+              sequence="8"/>
+
     <menuitem id="menu_dsd_routes_conf"
-              name="Routes"
+              name="Visit Plans"
               parent="menu_dsd_root"
               action="action_dsd_route"
               sequence="20"/>

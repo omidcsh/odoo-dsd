@@ -1,10 +1,7 @@
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-WEEKDAY_FIELDS = (
-    'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
-    'saturday', 'sunday',
-)
+from ..models.dsd_route import WEEKDAY_FIELDS
 
 
 class DsdRouteDayGenerate(models.TransientModel):
@@ -56,15 +53,7 @@ class DsdRouteDayGenerate(models.TransientModel):
                 route=self.route_id.name,
                 weekday=self.weekday,
             ))
-        day = RouteDay.create({
-            'route_id': self.route_id.id,
-            'date': self.date,
-        })
-        self.env['dsd.visit'].create([{
-            'route_day_id': day.id,
-            'partner_id': stop.partner_id.id,
-            'sequence': stop.sequence,
-        } for stop in stops])
+        day = self.route_id._create_route_day(self.date)
         return {
             'type': 'ir.actions.act_window',
             'name': day.name,
