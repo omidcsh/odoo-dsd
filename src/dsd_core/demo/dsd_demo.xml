@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Van fleet + locations: only in demo databases. On clean installs a
+         supervisor creates these from Inventory → Configuration → Locations. -->
+    <record id="fleet_brand_demo" model="fleet.vehicle.model.brand">
+        <field name="name">VanDo</field>
+    </record>
+    <record id="fleet_model_demo" model="fleet.vehicle.model">
+        <field name="name">Cargo 300</field>
+        <field name="brand_id" ref="fleet_brand_demo"/>
+    </record>
+    <record id="fleet_vehicle_demo" model="fleet.vehicle">
+        <field name="model_id" ref="fleet_model_demo"/>
+        <field name="driver_id" ref="base.user_admin"/>
+        <field name="license_plate">DSD-VAN-001</field>
+    </record>
+
+    <record id="location_vans" model="stock.location">
+        <field name="name">Vans</field>
+        <field name="usage">internal</field>
+        <field name="location_id" ref="stock.stock_location_stock"/>
+    </record>
+    <record id="location_van_01" model="stock.location">
+        <field name="name">VAN-01</field>
+        <field name="usage">internal</field>
+        <field name="location_id" ref="location_vans"/>
+        <field name="is_dsd_van" eval="True"/>
+    </record>
+
+    <record id="route_demo_a" model="dsd.route">
+        <field name="name">Route A — City Center</field>
+        <field name="mode">van_sales</field>
+        <field name="warehouse_id" ref="stock.warehouse0"/>
+        <field name="vehicle_id" ref="fleet_vehicle_demo"/>
+        <field name="van_location_id" ref="location_van_01"/>
+        <field name="driver_id" ref="base.user_admin"/>
+    </record>
+    <record id="route_demo_a_stop_1" model="dsd.route.stop">
+        <field name="route_id" ref="route_demo_a"/>
+        <field name="partner_id" ref="base.res_partner_2"/>
+        <field name="sequence" eval="1"/>
+        <field name="monday" eval="True"/>
+        <field name="thursday" eval="True"/>
+    </record>
+    <record id="route_demo_a_stop_2" model="dsd.route.stop">
+        <field name="route_id" ref="route_demo_a"/>
+        <field name="partner_id" ref="base.res_partner_3"/>
+        <field name="sequence" eval="2"/>
+        <field name="monday" eval="True"/>
+        <field name="thursday" eval="True"/>
+    </record>
+    <record id="route_demo_a_stop_3" model="dsd.route.stop">
+        <field name="route_id" ref="route_demo_a"/>
+        <field name="partner_id" ref="base.res_partner_4"/>
+        <field name="sequence" eval="3"/>
+        <field name="monday" eval="True"/>
+    </record>
+</odoo>

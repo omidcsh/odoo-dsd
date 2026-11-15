@@ -16,7 +16,10 @@ is not customer-visit oriented).
 Introduce two custom models in module `dsd_core`:
 
 - **`dsd.route`** — a reusable route template: name, warehouse, default vehicle
-  (`fleet.vehicle`), van location, driver (`res.users`), and ordered stops
+  (`fleet.vehicle`), van location, driver (`res.users`), **mode**
+  (`presale` / `van_sales` / `mixed`, default `mixed` — restricts which actions the
+  visit screen offers for that route; mixed allows any combination at a stop,
+  matching SAP's mixed tour scenarios), and ordered stops
   (`dsd.route.stop`: `res.partner` + sequence + day-of-week flags for frequency).
 - **`dsd.route.day`** — a concrete day's run (what SAP calls the visit list):
   date, route, vehicle, driver, state (`draft → loaded → in_progress → settled`),

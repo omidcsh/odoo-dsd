@@ -2,6 +2,12 @@
 
 - **Date:** 2026-11-15 · **Target stack:** Odoo 20.0 Community, Docker (`~/odoo-docker`),
   database `odoo` (demo data on)
+- **Progress:** Phase 0–1 delivered 2026-11-15 — `fleet`/`stock_fleet` installed,
+  `dsd_core` implemented (`src/dsd_core`: route/stop models, mode field, security
+  groups, views, demo route VAN-01, tests 3/3 green) and installed on the running
+  instance. Note for contributors: Odoo 20 replaced `ir.model.access` with
+  `ir.access` (new CSV format), `res.groups.category_id` with `privilege_id`,
+  and search views use bare `<group>` — see the module for reference patterns.
 - **Companion ADRs:** [001 build on standard apps](adr/ADR-001-build-on-odoo-standard-apps.md) ·
   [002 van = stock location](adr/ADR-002-van-as-stock-location.md) ·
   [003 route & visit models](adr/ADR-003-route-and-visit-model.md) ·
@@ -86,9 +92,11 @@ snake_case fields, `field.help` strings; access rights least-privilege (drivers 
 
 ### Key model fields (summary)
 
-- `dsd.route`: `name`, `warehouse_id`, `vehicle_id`, `van_location_id`,
-  `driver_id` (res.users), `stop_ids` (1..n `dsd.route.stop`: `partner_id`,
-  `sequence`, `mon..sun` weekday flags)
+- `dsd.route`: `name`, **`mode`** (`presale` / `van_sales` / `mixed` — restricts
+  the actions offered on the visit screen; `mixed` allows any combination per
+  stop), `warehouse_id`, `vehicle_id`, `van_location_id` (required when mode ≠
+  `presale`), `driver_id` (res.users), `stop_ids` (1..n `dsd.route.stop`:
+  `partner_id`, `sequence`, `mon..sun` weekday flags)
 - `dsd.route.day`: `route_id`, `date`, `driver_id`, `vehicle_id`, `state`
   (draft/loaded/in_progress/done/settled), `load_picking_id`,
   `settlement_id`, `visit_ids`

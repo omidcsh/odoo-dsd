@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dsd_route_list" model="ir.ui.view">
+        <field name="name">dsd.route.list</field>
+        <field name="model">dsd.route</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="mode" widget="badge"/>
+                <field name="warehouse_id" groups="stock.group_stock_multi_warehouses"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id"/>
+                <field name="stop_count" string="Stops"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dsd_route_form" model="ir.ui.view">
+        <field name="name">dsd.route.form</field>
+        <field name="model">dsd.route</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Route A — City Center"/></h1>
+                    </div>
+                    <group>
+                        <group string="Logistics">
+                            <field name="mode" widget="radio"/>
+                            <field name="warehouse_id"/>
+                            <field name="van_location_id"
+                                   invisible="mode == 'presale'"
+                                   required="mode != 'presale'"/>
+                            <field name="vehicle_id"
+                                   invisible="mode == 'presale'"/>
+                            <field name="driver_id"/>
+                        </group>
+                        <group string="Frequency">
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="stops" string="Stops">
+                            <field name="stop_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="partner_id"/>
+                                    <field name="monday" widget="boolean_toggle"/>
+                                    <field name="tuesday" widget="boolean_toggle"/>
+                                    <field name="wednesday" widget="boolean_toggle"/>
+                                    <field name="thursday" widget="boolean_toggle"/>
+                                    <field name="friday" widget="boolean_toggle"/>
+                                    <field name="saturday" widget="boolean_toggle"/>
+                                    <field name="sunday" widget="boolean_toggle"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="sequence"/>
+                                            <field name="partner_id"/>
+                                        </group>
+                                        <group>
+                                            <field name="monday" widget="boolean_toggle"/>
+                                            <field name="tuesday" widget="boolean_toggle"/>
+                                            <field name="wednesday" widget="boolean_toggle"/>
+                                            <field name="thursday" widget="boolean_toggle"/>
+                                            <field name="friday" widget="boolean_toggle"/>
+                                            <field name="saturday" widget="boolean_toggle"/>
+                                            <field name="sunday" widget="boolean_toggle"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dsd_route_search" model="ir.ui.view">
+        <field name="name">dsd.route.search</field>
+        <field name="model">dsd.route</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id"/>
+                <filter name="mode_presale" string="Presale" domain="[('mode', '=', 'presale')]"/>
+                <filter name="mode_van_sales" string="Van Sales" domain="[('mode', '=', 'van_sales')]"/>
+                <filter name="mode_mixed" string="Mixed" domain="[('mode', '=', 'mixed')]"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_mode" string="Mode" context="{'group_by': 'mode'}"/>
+                    <filter name="group_driver" string="Driver" context="{'group_by': 'driver_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dsd_route" model="ir.actions.act_window">
+        <field name="name">Routes</field>
+        <field name="res_model">dsd.route</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first DSD route</p>
+            <p>Define the ordered store stops and which weekdays the route runs.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dsd_root"
+              name="DSD"
+              sequence="15"/>
+    <menuitem id="menu_dsd_routes"
+              name="Routes"
+              parent="menu_dsd_root"
+              action="action_dsd_route"
+              sequence="10"/>
+</odoo>

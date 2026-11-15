@@ -1,0 +1,4 @@
+id,name,model_id,group_id/id,operation,domain
+access_dsd_route_user,dsd.route.user,dsd.route,group_dsd_user,ru,
+access_dsd_route_manager,dsd.route.manager,dsd.route,group_dsd_manager,crud,
+access_dsd_route_stop_user,dsd.route.stop.user,dsd.route.stop,group_dsd_user,crud,
