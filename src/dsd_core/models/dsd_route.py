@@ -38,11 +38,29 @@ class DsdRoute(models.Model):
     )
     stop_ids = fields.One2many('dsd.route.stop', 'route_id', string='Stops')
     stop_count = fields.Integer(compute='_compute_stop_count')
+    route_day_ids = fields.One2many('dsd.route.day', 'route_id', string='Route Days')
+    route_day_count = fields.Integer(compute='_compute_route_day_count')
 
     @api.depends('stop_ids')
     def _compute_stop_count(self):
         for route in self:
             route.stop_count = len(route.stop_ids)
+
+    @api.depends('route_day_ids')
+    def _compute_route_day_count(self):
+        for route in self:
+            route.route_day_count = len(route.route_day_ids)
+
+    def action_open_route_days(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.env._('Route Days'),
+            'res_model': 'dsd.route.day',
+            'view_mode': 'list,form',
+            'domain': [('route_id', '=', self.id)],
+            'context': {'default_route_id': self.id},
+        }
 
     @api.constrains('mode', 'van_location_id')
     def _check_van_location(self):
