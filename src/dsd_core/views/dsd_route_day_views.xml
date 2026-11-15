@@ -29,6 +29,19 @@
                 <header>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,loaded,in_progress,done"/>
+                    <button name="action_load_van" type="object"
+                            string="Load Van" class="btn-primary"
+                            icon="fa-truck"
+                            invisible="state != 'draft'"/>
+                    <button name="action_start_route" type="object"
+                            string="Start Route" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_end_route" type="object"
+                            string="End Route" class="btn-primary"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_create_stock_return" type="object"
+                            string="Return Stock"
+                            invisible="state not in ('in_progress', 'done')"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -45,12 +58,16 @@
                             <field name="route_id"/>
                             <field name="date"/>
                             <field name="mode"/>
+                            <field name="load_picking_id"
+                                   invisible="not load_picking_id"/>
                         </group>
                         <group string="Resources">
                             <field name="driver_id" widget="many2one_avatar_user"/>
                             <field name="vehicle_id"/>
                             <field name="van_location_id"/>
                             <field name="warehouse_id" groups="stock.group_stock_multi_warehouses"/>
+                            <field name="return_picking_id"
+                                   invisible="not return_picking_id"/>
                         </group>
                     </group>
                     <notebook>
@@ -95,6 +112,64 @@
                     <filter name="group_driver" string="Driver" context="{'group_by': 'driver_id'}"/>
                 </group>
             </search>
+        </field>
+    </record>
+
+    <record id="view_dsd_visit_form" model="ir.ui.view">
+        <field name="name">dsd.visit.form</field>
+        <field name="model">dsd.visit</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending,done"/>
+                    <button name="action_deliver" type="object"
+                            string="Deliver from Van" class="btn-primary"
+                            invisible="state != 'pending' or delivery_id"/>
+                    <button name="action_take_return" type="object"
+                            string="Take Return"
+                            invisible="state != 'pending' or return_id"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Visit">
+                            <field name="route_day_id"/>
+                            <field name="sequence"/>
+                            <field name="partner_id"/>
+                            <field name="skip_reason"
+                                   invisible="state != 'skipped'"/>
+                        </group>
+                        <group string="Documents">
+                            <field name="sale_order_id"/>
+                            <field name="delivery_id"/>
+                            <field name="return_id"/>
+                            <field name="invoice_id"/>
+                            <field name="payment_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Proof of Delivery">
+                        <field name="signature" widget="image"
+                               options='{"size": [300, 150]}'
+                               readonly="state == 'done' and signature"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dsd_visit_list" model="ir.ui.view">
+        <field name="name">dsd.visit.list</field>
+        <field name="model">dsd.visit</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="route_day_id"/>
+                <field name="partner_id"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'skipped'"
+                       decoration-success="state == 'done'"/>
+                <field name="delivery_id" optional="show"/>
+            </list>
         </field>
     </record>
 

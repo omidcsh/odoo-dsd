@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
 
@@ -40,6 +41,17 @@ class DsdRouteDay(models.Model):
     visit_ids = fields.One2many('dsd.visit', 'route_day_id', string='Visits')
     visit_count = fields.Integer(compute='_compute_visit_count')
     pending_visit_count = fields.Integer(compute='_compute_visit_count')
+    load_picking_id = fields.Many2one(
+        'stock.picking', string='Van Load',
+        copy=False,
+        help='Internal transfer loading the van from warehouse stock.',
+    )
+    return_picking_id = fields.Many2one(
+        'stock.picking', string='Stock Return',
+        copy=False,
+        help='Internal transfer returning unsold goods from the van to the '
+             'warehouse at the end of the day.',
+    )
 
     _route_date_uniq = models.Constraint(
         'unique(route_id, date)',
@@ -71,6 +83,79 @@ class DsdRouteDay(models.Model):
             'domain': [('route_day_id', '=', self.id)],
             'context': {'default_route_day_id': self.id},
         }
+
+    # ------------------------------------------------------------------
+    # Day workflow: load → start → visits → end → return
+    # ------------------------------------------------------------------
+
+    def _require_single(self):
+        if len(self) != 1:
+            raise UserError(self.env._('Select exactly one route day.'))
+        return self
+
+    def action_load_van(self):
+        """Create the internal transfer loading the van from warehouse stock."""
+        day = self._require_single()
+        if day.state != 'draft':
+            raise UserError(self.env._(
+                'The van can only be loaded while the route day is in draft.'))
+        if not day.van_location_id:
+            raise UserError(self.env._(
+                'This route has no van location — van sales routes need one.'))
+        if day.load_picking_id:
+            return day.load_picking_id._open_form()
+        warehouse = day.warehouse_id
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': warehouse.int_type_id.id,
+            'location_id': warehouse.lot_stock_id.id,
+            'location_dest_id': day.van_location_id.id,
+            'origin': day.name,
+        })
+        day.load_picking_id = picking
+        return picking._open_form()
+
+    def action_start_route(self):
+        day = self._require_single()
+        if day.state not in ('draft', 'loaded'):
+            raise UserError(self.env._('The route has already started.'))
+        if day.load_picking_id and day.load_picking_id.state != 'done':
+            raise UserError(self.env._(
+                'Validate the van load %(picking)s before starting the route.',
+                picking=day.load_picking_id.name,
+            ))
+        day.state = 'in_progress'
+
+    def action_end_route(self):
+        day = self._require_single()
+        if day.state != 'in_progress':
+            raise UserError(self.env._('Only a route in progress can be ended.'))
+        pending = day.visit_ids.filtered(lambda v: v.state == 'pending')
+        if pending:
+            raise UserError(self.env._(
+                '%(count)s visit(s) are still pending — mark them done or '
+                'skipped before ending the route.',
+                count=len(pending),
+            ))
+        day.state = 'done'
+
+    def action_create_stock_return(self):
+        """End-of-day internal transfer returning unsold stock to the warehouse."""
+        day = self._require_single()
+        if day.state not in ('in_progress', 'done'):
+            raise UserError(self.env._(
+                'The stock return can only be created during or after the '
+                'route, and before settlement.'))
+        if day.return_picking_id:
+            return day.return_picking_id._open_form()
+        warehouse = day.warehouse_id
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': warehouse.int_type_id.id,
+            'location_id': day.van_location_id.id,
+            'location_dest_id': warehouse.lot_stock_id.id,
+            'origin': self.env._('%(day)s — stock return', day=day.name),
+        })
+        day.return_picking_id = picking
+        return picking._open_form()
 
 
 class DsdVisit(models.Model):
@@ -112,3 +197,59 @@ class DsdVisit(models.Model):
     )
     payment_ids = fields.Many2many('account.payment', string='Payments')
     signature = fields.Binary('Proof of Delivery', attachment=True)
+
+    # ------------------------------------------------------------------
+    # Visit workflow
+    # ------------------------------------------------------------------
+
+    def _delivery_location(self, visit):
+        return visit.route_day_id.van_location_id
+
+    def action_deliver(self):
+        """Deliver from the van to this store: creates the outgoing picking."""
+        for visit in self:
+            if visit.state != 'pending':
+                raise UserError(self.env._(
+                    'Only a pending visit can be delivered.'))
+            day = visit.route_day_id
+            if day.state != 'in_progress':
+                raise UserError(self.env._(
+                    'Start the route day before delivering to stores.'))
+            warehouse = day.warehouse_id
+            picking = self.env['stock.picking'].create({
+                'picking_type_id': warehouse.out_type_id.id,
+                'location_id': self._delivery_location(visit).id,
+                'location_dest_id': visit.partner_id.property_stock_customer.id,
+                'partner_id': visit.partner_id.id,
+                'origin': self.env._(
+                    '%(day)s — %(store)s',
+                    day=day.name,
+                    store=visit.partner_id.display_name,
+                ),
+            })
+            visit.delivery_id = picking
+            return picking._open_form()
+        return True
+
+    def action_take_return(self):
+        """Take goods/empties back from this store into the van."""
+        for visit in self:
+            if visit.state != 'pending':
+                raise UserError(self.env._(
+                    'Returns can only be taken while the visit is pending.'))
+            day = visit.route_day_id
+            warehouse = day.warehouse_id
+            picking = self.env['stock.picking'].create({
+                'picking_type_id': warehouse.in_type_id.id,
+                'location_id': visit.partner_id.property_stock_supplier.id,
+                'location_dest_id': self._delivery_location(visit).id,
+                'partner_id': visit.partner_id.id,
+                'origin': self.env._(
+                    '%(day)s — return from %(store)s',
+                    day=day.name,
+                    store=visit.partner_id.display_name,
+                ),
+            })
+            visit.return_id = picking
+            return picking._open_form()
+        return True

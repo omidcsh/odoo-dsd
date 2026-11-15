@@ -2,12 +2,10 @@
 
 - **Date:** 2026-11-15 · **Target stack:** Odoo 20.0 Community, Docker (`~/odoo-docker`),
   database `odoo` (demo data on)
-- **Progress:** Phase 0–1 delivered 2026-11-15 — `fleet`/`stock_fleet` installed,
-  `dsd_core` implemented (`src/dsd_core`: route/stop models, mode field, security
-  groups, views, demo route VAN-01, tests 3/3 green) and installed on the running
-  instance. Note for contributors: Odoo 20 replaced `ir.model.access` with
-  `ir.access` (new CSV format), `res.groups.category_id` with `privilege_id`,
-  and search views use bare `<group>` — see the module for reference patterns.
+- **Progress:** Phase 0–2 delivered 2026-11-15 — `fleet`/`stock_fleet` installed;
+  `dsd_core` (`src/dsd_core`) now covers routes/stops (phase 1) **and** route
+  days, visits, and the day-generation wizard (phase 2), 7/7 tests green, live
+  smoke run created `RD/2026/0004` with 3 pending visits.
 - **Companion ADRs:** [001 build on standard apps](adr/ADR-001-build-on-odoo-standard-apps.md) ·
   [002 van = stock location](adr/ADR-002-van-as-stock-location.md) ·
   [003 route & visit models](adr/ADR-003-route-and-visit-model.md) ·
