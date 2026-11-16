@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Visit Plan Type ===================== -->
+    <record id="view_dsd_visit_plan_type_list" model="ir.ui.view">
+        <field name="name">dsd.visit.plan.type.list</field>
+        <field name="model">dsd.visit.plan.type</field>
+        <field name="arch" type="xml">
+            <list string="Visit Plan Types">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="role"/>
+                <field name="relevant_doc"/>
+                <field name="make_delivery"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_visit_plan_type_form" model="ir.ui.view">
+        <field name="name">dsd.visit.plan.type.form</field>
+        <field name="model">dsd.visit.plan.type</field>
+        <field name="arch" type="xml">
+            <form string="Visit Plan Type">
+                <sheet>
+                    <group>
+                        <group string="Type">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="role"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Relevant Documents (role matrix)">
+                            <field name="relevant_doc"/>
+                            <field name="make_delivery"/>
+                            <field name="driver_lockable"/>
+                        </group>
+                        <group string="Stop Defaults">
+                            <field name="visit_times_source"/>
+                            <field name="default_waiting_minutes"/>
+                            <field name="default_travel_minutes"/>
+                            <field name="max_load_attempts"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_visit_plan_type" model="ir.actions.act_window">
+        <field name="name">Visit Plan Types</field>
+        <field name="res_model">dsd.visit.plan.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== Visit Plan ===================== -->
+    <record id="view_dsd_visit_plan_form" model="ir.ui.view">
+        <field name="name">dsd.visit.plan.form</field>
+        <field name="model">dsd.visit.plan</field>
+        <field name="arch" type="xml">
+            <form string="Visit Plan">
+                <header>
+                    <button name="action_set_active" type="object" string="Activate"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_set_draft" type="object" string="Set Draft"
+                            invisible="state != 'active'"/>
+                    <button name="action_set_closed" type="object" string="Close"
+                            invisible="state == 'closed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,active"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_lists" type="object" class="oe_stat_button" icon="fa-calendar">
+                            <field name="planned_list_count" widget="statinfo" string="Visit Lists"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                        <div class="text-muted"><field name="code"/></div>
+                    </div>
+                    <group>
+                        <group string="Plan">
+                            <field name="plan_type_id"/>
+                            <field name="route_id"/>
+                            <field name="sales_team_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Validity">
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="last_execution_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Appointment Rule" name="recurrence">
+                            <group>
+                                <group string="Recurrence">
+                                    <field name="frequency" widget="radio"/>
+                                    <group invisible="frequency != 'weekly'">
+                                        <div class="o_row">
+                                            <field name="mon"/><field name="tue"/><field name="wed"/>
+                                            <field name="thu"/><field name="fri"/><field name="sat"/><field name="sun"/>
+                                        </div>
+                                        <field name="interval_weeks"/>
+                                    </group>
+                                    <field name="recurrence_rrule"
+                                           invisible="frequency != 'rrule'"/>
+                                    <field name="anchor_date"/>
+                                </group>
+                                <group string="Non-Working Days">
+                                    <field name="calendar_id"/>
+                                    <field name="nonworking_policy"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Customers" name="customers">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="partner_id"/>
+                                    <field name="waiting_minutes"/>
+                                    <field name="travel_minutes"/>
+                                    <field name="unloading_point_id" optional="hide"/>
+                                    <field name="contact_id" optional="hide"/>
+                                    <field name="inactive"/>
+                                    <field name="next_occurrence_date" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Defaults &amp; Notes" name="defaults">
+                            <group>
+                                <group string="Shipment Defaults">
+                                    <field name="driver_id"/>
+                                    <field name="vehicle_id"/>
+                                    <field name="trailer_id"/>
+                                </group>
+                            </group>
+                            <field name="driver_notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_dsd_visit_plan_list" model="ir.ui.view">
+        <field name="name">dsd.visit.plan.list</field>
+        <field name="model">dsd.visit.plan</field>
+        <field name="arch" type="xml">
+            <list string="Visit Plans" decoration-muted="state == 'closed'">
+                <field name="name"/>
+                <field name="plan_type_id"/>
+                <field name="route_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-muted="state == 'closed'"/>
+                <field name="valid_from" optional="hide"/>
+                <field name="valid_to" optional="hide"/>
+                <field name="last_execution_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_visit_plan_search" model="ir.ui.view">
+        <field name="name">dsd.visit.plan.search</field>
+        <field name="model">dsd.visit.plan</field>
+        <field name="arch" type="xml">
+            <search string="Visit Plans">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="route_id"/>
+                <field name="line_ids" string="Customer"/>
+                <filter name="active" string="Active" domain="[('state', '=', 'active')]"/>
+                <group>
+                    <filter name="group_type" string="Plan Type" context="{'group_by': 'plan_type_id'}"/>
+                    <filter name="group_route" string="Route" context="{'group_by': 'route_id'}"/>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_dsd_visit_plan" model="ir.actions.act_window">
+        <field name="name">Visit Plans</field>
+        <field name="res_model">dsd.visit.plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a strategic visit plan</p>
+            <p>Group customers that are visited together on a recurring schedule;
+               visit lists are generated from plans for concrete dates.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Visit List ===================== -->
+    <record id="view_dsd_visit_list_form" model="ir.ui.view">
+        <field name="name">dsd.visit.list.form</field>
+        <field name="model">dsd.visit.list</field>
+        <field name="arch" type="xml">
+            <form string="Visit List">
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_start" type="object" string="Start"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_done" type="object" string="Complete"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('cancelled', 'done')"/>
+                    <button name="action_reopen" type="object" string="Reset to Draft"
+                            invisible="state not in ('cancelled',)"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="not line_ids">
+                            <span class="o_stat_text">Orders</span>
+                        </button>
+                        <button name="action_view_appointments" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                            <span class="o_stat_text">Appointments</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="state != 'draft'"/></h1>
+                    </div>
+                    <group>
+                        <group string="List">
+                            <field name="execution_date"/>
+                            <field name="plan_id"
+                                   invisible="tour_id"/>
+                            <field name="plan_type_id" readonly="bool(tour_id)"/>
+                            <field name="route_id" readonly="bool(tour_id)"/>
+                            <field name="inactive"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Resources">
+                            <field name="driver_id"
+                                   readonly="bool(tour_id) or not plan_type_driver_lockable"/>
+                            <field name="vehicle_id"
+                                   readonly="bool(tour_id) or not plan_type_driver_lockable"/>
+                            <field name="trailer_id"/>
+                            <field name="tour_id"/>
+                            <field name="speculative_load_picking_id"/>
+                            <field name="plan_type_driver_lockable" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Stops" name="stops">
+                            <field name="line_ids">
+                                <list editable="bottom" decoration-success="status == 'sp'"
+                                      decoration-danger="status == 'up'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="partner_id"/>
+                                    <field name="parent_state" column_invisible="1"/>
+                                    <field name="editable_in_list" column_invisible="1"/>
+                                    <field name="status" readonly="not editable_in_list"/>
+                                    <field name="reason_id"
+                                           invisible="status not in ('up', 'rs')"
+                                           readonly="not editable_in_list"
+                                           required="status in ('up', 'rs') and editable_in_list"/>
+                                    <field name="arrival" optional="hide"/>
+                                    <field name="departure" optional="hide"/>
+                                    <field name="waiting_minutes" optional="hide"/>
+                                    <field name="travel_minutes" optional="hide"/>
+                                    <field name="unloading_point_id" optional="hide"/>
+                                    <field name="customer_notes" optional="show"/>
+                                    <field name="visit_note" optional="hide"/>
+                                    <field name="is_unplanned" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Driver Notes" name="notes">
+                            <field name="driver_notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_dsd_visit_list_list" model="ir.ui.view">
+        <field name="name">dsd.visit.list.list</field>
+        <field name="model">dsd.visit.list</field>
+        <field name="arch" type="xml">
+            <list string="Visit Lists" decoration-muted="inactive or state == 'cancelled'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="execution_date"/>
+                <field name="route_id"/>
+                <field name="plan_type_id" optional="hide"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id" optional="hide"/>
+                <field name="stop_count" string="Stops"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'in_progress'"
+                       decoration-success="state == 'done'"/>
+                <field name="inactive"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_visit_list_kanban" model="ir.ui.view">
+        <field name="name">dsd.visit.list.kanban</field>
+        <field name="model">dsd.visit.list</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="execution_date"/>
+                <field name="driver_id"/>
+                <field name="route_id"/>
+                <field name="stop_count"/>
+                <templates>
+                    <t t-name="card">
+                        <div>
+                            <b><t t-out="record.name.value"/></b>
+                            <div><t t-out="record.execution_date.value"/></div>
+                            <div class="text-muted">
+                                <t t-out="record.driver_id.value or '?'"/> ·
+                                <t t-out="record.route_id.value or '?'"/> ·
+                                <t t-out="record.stop_count.value"/> stops
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_dsd_visit_list_search" model="ir.ui.view">
+        <field name="name">dsd.visit.list.search</field>
+        <field name="model">dsd.visit.list</field>
+        <field name="arch" type="xml">
+            <search string="Visit Lists">
+                <field name="name"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id"/>
+                <field name="route_id"/>
+                <field name="line_ids" string="Customer"/>
+                <filter name="upcoming" string="From Today"
+                        domain="[('execution_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="inactive" string="Inactive" domain="[('inactive', '=', True)]"/>
+                <group>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_date" string="Execution Date" context="{'group_by': 'execution_date'}"/>
+                    <filter name="group_driver" string="Driver" context="{'group_by': 'driver_id'}"/>
+                    <filter name="group_route" string="Route" context="{'group_by': 'route_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_dsd_visit_list" model="ir.actions.act_window">
+        <field name="name">Visit Lists</field>
+        <field name="res_model">dsd.visit.list</field>
+        <field name="view_mode">list,kanban,form,calendar</field>
+        <field name="context">{'search_default_upcoming': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No visit lists</p>
+            <p>Generate them from visit plans, or create a list manually for a specific date.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Appointments ===================== -->
+    <record id="view_dsd_visit_appointment_calendar" model="ir.ui.view">
+        <field name="name">dsd.visit.appointment.calendar</field>
+        <field name="model">dsd.visit.appointment</field>
+        <field name="arch" type="xml">
+            <calendar date_start="date" mode="month" string="Visit Appointments"
+                      color="partner_id">
+                <field name="partner_id"/>
+                <field name="kind"/>
+            </calendar>
+        </field>
+    </record>
+    <record id="view_dsd_visit_appointment_list" model="ir.ui.view">
+        <field name="name">dsd.visit.appointment.list</field>
+        <field name="model">dsd.visit.appointment</field>
+        <field name="arch" type="xml">
+            <list string="Visit Appointments">
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="kind"/>
+                <field name="route_id" optional="hide"/>
+                <field name="visit_list_id" optional="hide"/>
+                <field name="plan_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_visit_appointment_search" model="ir.ui.view">
+        <field name="name">dsd.visit.appointment.search</field>
+        <field name="model">dsd.visit.appointment</field>
+        <field name="arch" type="xml">
+            <search string="Visit Appointments">
+                <field name="partner_id"/>
+                <field name="route_id"/>
+                <filter name="upcoming" string="From Today"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="kind_visit" string="Visits" domain="[('kind', '=', 'visit')]"/>
+                <filter name="kind_delivery" string="Deliveries" domain="[('kind', '=', 'delivery')]"/>
+                <filter name="planned_only" string="Without List Yet" domain="[('visit_list_id', '=', False)]"/>
+                <group>
+                    <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_route" string="Route" context="{'group_by': 'route_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_dsd_visit_appointment" model="ir.actions.act_window">
+        <field name="name">Visit Appointments</field>
+        <field name="res_model">dsd.visit.appointment</field>
+        <field name="view_mode">calendar,list</field>
+        <field name="context">{'search_default_upcoming': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No appointments materialized</p>
+            <p>Appointments come from active visit plans (nightly cron) and generated visit lists.</p>
+        </field>
+    </record>
+</odoo>

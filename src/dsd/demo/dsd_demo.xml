@@ -174,4 +174,53 @@
         <field name="aggregation_id" ref="dsd.aggregation_crates"/>
         <field name="factor" eval="1.0"/>
     </record>
+
+    <!-- Visit plan types: one per driver role (SAP role matrix) -->
+    <record id="plan_type_presale" model="dsd.visit.plan.type">
+        <field name="name">Presale</field>
+        <field name="code">PRESALE</field>
+        <field name="role">preseller</field>
+        <field name="relevant_doc">visit_list</field>
+    </record>
+    <record id="plan_type_delivery" model="dsd.visit.plan.type">
+        <field name="name">Delivery</field>
+        <field name="code">DELIVERY</field>
+        <field name="role">delivery</field>
+        <field name="relevant_doc">tour</field>
+        <field name="make_delivery" eval="True"/>
+    </record>
+    <record id="plan_type_van" model="dsd.visit.plan.type">
+        <field name="name">Van Sales</field>
+        <field name="code">VAN</field>
+        <field name="role">van_sales</field>
+        <field name="relevant_doc">both</field>
+    </record>
+    <record id="plan_type_mixed" model="dsd.visit.plan.type">
+        <field name="name">Mixed</field>
+        <field name="code">MIXED</field>
+        <field name="role">mixed</field>
+        <field name="relevant_doc">both</field>
+        <field name="make_delivery" eval="True"/>
+    </record>
+
+    <!-- Strategic visit plan on the demo route -->
+    <record id="visit_plan_presale_north" model="dsd.visit.plan">
+        <field name="name">North Presale Circuit</field>
+        <field name="plan_type_id" ref="dsd.plan_type_presale"/>
+        <field name="route_id" ref="dsd.route_north"/>
+        <field name="driver_id" ref="dsd.driver_2"/>
+        <field name="frequency">weekly</field>
+        <field name="mon" eval="True"/>
+        <field name="thu" eval="True"/>
+    </record>
+    <record id="visit_plan_presale_north_line_1" model="dsd.visit.plan.line">
+        <field name="plan_id" ref="dsd.visit_plan_presale_north"/>
+        <field name="sequence" eval="10"/>
+        <field name="partner_id" ref="dsd.partner_dsd_1"/>
+    </record>
+    <record id="visit_plan_presale_north_line_2" model="dsd.visit.plan.line">
+        <field name="plan_id" ref="dsd.visit_plan_presale_north"/>
+        <field name="sequence" eval="20"/>
+        <field name="partner_id" ref="dsd.partner_dsd_2"/>
+    </record>
 </odoo>

@@ -16,6 +16,9 @@
                         <setting id="dsd_planning_horizon" help="How many days ahead customer visit appointments are materialized">
                             <field name="dsd_planning_horizon_days"/>
                         </setting>
+                        <setting id="dsd_min_lead" help="Minimum lead time before a planned visit can be promised as a delivery date">
+                            <field name="dsd_min_lead_days"/>
+                        </setting>
                     </block>
 
                     <block title="Tour Execution" name="dsd_execution_container">

@@ -8,6 +8,10 @@ class ResCompany(models.Model):
     dsd_default_warehouse_id = fields.Many2one(
         'stock.warehouse', string='DSD Default Warehouse')
     dsd_planning_horizon_days = fields.Integer(default=21)
+    dsd_min_lead_days = fields.Integer(
+        string='DSD Minimum Lead Days', default=1,
+        help='Order-entry delivery dates are proposed from the first planned '
+             'appointment at least this many days ahead.')
     dsd_stock_visibility = fields.Boolean(
         string='DSD Stock Visibility', default=True,
         help='Van stock is isolated from warehouse availability: warehouse orders '

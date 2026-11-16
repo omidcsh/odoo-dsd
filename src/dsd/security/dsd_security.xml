@@ -81,4 +81,8 @@
         <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
         <field name="comment">Full DSD configuration and operations.</field>
     </record>
+
+    <!-- Driver visibility is a domain-limited permission on ir.access
+         (Odoo 20 replaced ir.rule): see ir.access.csv rows with domains.
+         Managers are unrestricted via group_dsd_user's domain-free access. -->
 </odoo>

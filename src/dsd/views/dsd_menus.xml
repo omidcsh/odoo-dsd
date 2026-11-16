@@ -5,6 +5,32 @@
               sequence="25"
               groups="dsd.group_dsd_driver"/>
 
+    <menuitem id="menu_dsd_operations"
+              name="Operations"
+              parent="menu_dsd_root"
+              sequence="5"/>
+
+    <menuitem id="menu_dsd_visit_plan"
+              parent="menu_dsd_operations"
+              action="action_dsd_visit_plan"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_visit_list"
+              parent="menu_dsd_operations"
+              action="action_dsd_visit_list"
+              sequence="20"/>
+
+    <menuitem id="menu_dsd_visit_appointment"
+              parent="menu_dsd_operations"
+              action="action_dsd_visit_appointment"
+              groups="dsd.group_dsd_user"
+              sequence="30"/>
+
+    <menuitem id="menu_dsd_generate_lists"
+              parent="menu_dsd_operations"
+              action="action_dsd_visit_list_generate"
+              sequence="40"/>
+
     <menuitem id="menu_dsd_master"
               name="Master Data"
               parent="menu_dsd_root"
@@ -30,6 +56,11 @@
               parent="menu_dsd_root"
               groups="dsd.group_dsd_user"
               sequence="90"/>
+
+    <menuitem id="menu_dsd_visit_plan_type"
+              parent="menu_dsd_config"
+              action="action_dsd_visit_plan_type"
+              sequence="5"/>
 
     <menuitem id="menu_dsd_license_category"
               parent="menu_dsd_config"

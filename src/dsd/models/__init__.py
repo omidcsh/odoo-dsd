@@ -7,6 +7,12 @@ from . import dsd_counting_group
 from . import dsd_aggregation
 from . import dsd_route
 from . import dsd_driver
+from . import dsd_visit_plan_type
+from . import dsd_visit_plan
+from . import dsd_visit_plan_line
+from . import dsd_visit_list
+from . import dsd_visit_appointment
+from . import sale_order
 from . import fleet_vehicle
 from . import res_partner
 from . import product_template

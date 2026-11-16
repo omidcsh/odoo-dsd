@@ -8,6 +8,8 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.dsd_default_warehouse_id', readonly=False)
     dsd_planning_horizon_days = fields.Integer(
         related='company_id.dsd_planning_horizon_days', readonly=False)
+    dsd_min_lead_days = fields.Integer(
+        related='company_id.dsd_min_lead_days', readonly=False)
     dsd_stock_visibility = fields.Boolean(
         related='company_id.dsd_stock_visibility', readonly=False)
     dsd_loading_confirmation_required = fields.Boolean(

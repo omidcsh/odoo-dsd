@@ -66,3 +66,14 @@ class ResPartner(models.Model):
                 raise ValidationError(self.env._(
                     'Customer %s collects on delivery but accepts no payment method.',
                     partner.name))
+
+    def action_view_dsd_appointments(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.env._('Planned Visits'),
+            'res_model': 'dsd.visit.appointment',
+            'view_mode': 'calendar,list',
+            'domain': [('partner_id', '=', self.id)],
+            'context': {'search_default_upcoming': 1},
+        }

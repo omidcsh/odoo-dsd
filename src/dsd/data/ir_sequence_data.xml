@@ -7,4 +7,18 @@
         <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
+    <record id="seq_dsd_visit_plan" model="ir.sequence">
+        <field name="name">DSD Visit Plan</field>
+        <field name="code">dsd.visit.plan</field>
+        <field name="prefix">VP/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_dsd_visit_list" model="ir.sequence">
+        <field name="name">DSD Visit List</field>
+        <field name="code">dsd.visit.list</field>
+        <field name="prefix">VL/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
 </odoo>

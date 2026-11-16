@@ -1,11 +1,16 @@
 # DSD (Direct Store Delivery) on Odoo 20 — Comprehensive Implementation Plan (v2, from scratch)
 
-- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phase 0 complete (2026-11-16).
+- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phase 0 + Phase 1 complete (2026-11-16).
   Supersedes all prior plans and the `dsd_core` prototype.
   Phase 0 done: module `src/dsd` installed on dev DB with demo; 22/22 tests green on
   clean install; master data, security, settings and menus live.
-  Pending from Phase 0 AC: one manual browser pass over the new forms/menus
-  (§4.4 headless-testing caveat).
+  Phase 1 done: visit plan types (role matrix), strategic visit plans (weekly/rrule
+  recurrence, non-working-day policies, non-appointments), operational visit lists
+  (statuses NP/SP/PP/UP/RS, postponing, confirm/start/done), appointment time stream
+  with nightly fill cron, generation wizard (dry-run, watermark, log), sale-order
+  route/date proposal. 45/45 tests green on clean install; end-to-end smoke verified
+  on the live DB (plan → generated list VL/2026/00001 → appointments → order proposal).
+  Pending AC: one manual browser pass over the new forms/menus (§4.4 headless caveat).
 - **Target stack:** Odoo 20.0 Community (docker: `~/odoo-docker`, Postgres 16), local git only
 - **Built from:** full analysis of `sap-dsd/` reference set —
   SAP Help *Direct Store Delivery* (EHP8 SP25), *SAP DSD Configuration* guide + SP01/SP02/SP03 deltas,
@@ -309,6 +314,26 @@ assets grow. The old `dsd_core` is removed (§19.3).
     phrase; do not rely on demo presence in tests.
 18. Fleet vehicle license plates carry a DB unique constraint — demo collisions from
     leftover vehicles surface at install time.
+19. `ir.rule` is REMOVED. Record rules are now domain-carrying `ir.access` rows:
+    a group-scoped row is a domain-limited *permission* (users of that group may only
+    operate on matching records; permissions OR-ed across groups); a group-less row is
+    a *restriction* applying to every user. "Drivers see only own lists" =
+    `group_dsd_driver` permission with domain `[('driver_id.user_id','=',user.id)]`.
+20. `ir.cron` lost the `numbercall` field; follow the `mail` module's cron XML shape
+    (`forcecreate`, `user_id` base.user_root, no numbercall).
+21. Kanban/form arch forbids `t-esc` — use `t-out`.
+22. The view validator rejects button `context` referencing `active_id` ("field does
+    not exist in model") — use object-method buttons with a domain instead.
+23. `resource.calendar` lost `tz` (interval tz comes from arguments/resources) and
+    attendance lost `name`; `dayofweek` is a labeled selection `'0'..'6'` with one row
+    per day-half. `_work_intervals_batch(start, end)` requires TZ-AWARE datetimes and
+    returns `{key: Intervals}` (empty Intervals = non-working day; we evaluate UTC
+    day boundaries).
+24. Transient many2many writes enforce the field domain: linking a record outside the
+    field's `domain` raises "Cannot link inaccessible records" — tests must set fields
+    the domain filters on (e.g. plan state) before selecting records.
+25. Manifest order is load order: views referencing another file's action/xmlid must
+    come after it.
 
 
 ---

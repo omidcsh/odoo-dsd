@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_dsd" model="ir.ui.view">
+        <field name="name">sale.order.form.dsd</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='sale_info']" position="inside">
+                <field name="dsd_route_id"/>
+                <field name="dsd_proposed_date"/>
+                <field name="dsd_visit_list_line_id" invisible="1"/>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_apply_dsd_defaults" type="object" string="Apply DSD Plan"
+                        icon="fa-calendar-check-o"
+                        invisible="not partner_id or dsd_visit_list_line_id or state != 'draft'"
+                        help="Propose the delivery date from the customer's next planned visit and set the route."/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

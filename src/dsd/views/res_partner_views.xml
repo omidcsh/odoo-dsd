@@ -5,6 +5,13 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <div class="oe_button_box" name="button_box" position="inside">
+                <button class="oe_stat_button" type="object" icon="fa-calendar-check-o"
+                        name="action_view_dsd_appointments"
+                        invisible="not dsd_route_id">
+                    <span class="o_stat_text">Planned<br/>Visits</span>
+                </button>
+            </div>
             <xpath expr="//page[@name='sales_purchases']" position="after">
                 <page string="DSD" name="dsd_customer">
                     <group>
