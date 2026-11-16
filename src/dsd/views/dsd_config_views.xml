@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- License Categories -->
+    <record id="view_dsd_license_category_list" model="ir.ui.view">
+        <field name="name">dsd.license.category.list</field>
+        <field name="model">dsd.license.category</field>
+        <field name="arch" type="xml">
+            <list string="License Categories">
+                <field name="code"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_license_category_form" model="ir.ui.view">
+        <field name="name">dsd.license.category.form</field>
+        <field name="model">dsd.license.category</field>
+        <field name="arch" type="xml">
+            <form string="License Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="description"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_license_category" model="ir.actions.act_window">
+        <field name="name">License Categories</field>
+        <field name="res_model">dsd.license.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Lock Periods -->
+    <record id="view_dsd_lock_period_list" model="ir.ui.view">
+        <field name="name">dsd.lock.period.list</field>
+        <field name="model">dsd.lock.period</field>
+        <field name="arch" type="xml">
+            <list string="Lock Periods">
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="employee_id"/>
+                <field name="vehicle_id"/>
+                <field name="reason" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_lock_period_form" model="ir.ui.view">
+        <field name="name">dsd.lock.period.form</field>
+        <field name="model">dsd.lock.period</field>
+        <field name="arch" type="xml">
+            <form string="Lock Period">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="vehicle_id"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="reason"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_lock_period" model="ir.actions.act_window">
+        <field name="name">Lock Periods</field>
+        <field name="res_model">dsd.lock.period</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No lock periods</p>
+            <p>Locked drivers or vehicles are skipped by tour generation and visit-list defaults.</p>
+        </field>
+    </record>
+
+    <!-- DSD Groups -->
+    <record id="view_dsd_dsd_group_list" model="ir.ui.view">
+        <field name="name">dsd.dsd.group.list</field>
+        <field name="model">dsd.dsd.group</field>
+        <field name="arch" type="xml">
+            <list string="DSD Groups">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="calendar_kind"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_dsd_group_form" model="ir.ui.view">
+        <field name="name">dsd.dsd.group.form</field>
+        <field name="model">dsd.dsd.group</field>
+        <field name="arch" type="xml">
+            <form string="DSD Group">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="calendar_kind"/>
+                        <field name="description"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_dsd_group" model="ir.actions.act_window">
+        <field name="name">DSD Groups</field>
+        <field name="res_model">dsd.dsd.group</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Counting Groups -->
+    <record id="view_dsd_counting_group_list" model="ir.ui.view">
+        <field name="name">dsd.counting.group.list</field>
+        <field name="model">dsd.counting.group</field>
+        <field name="arch" type="xml">
+            <list string="Counting Groups">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="product_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_counting_group_form" model="ir.ui.view">
+        <field name="name">dsd.counting.group.form</field>
+        <field name="model">dsd.counting.group</field>
+        <field name="arch" type="xml">
+            <form string="Counting Group">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="active"/>
+                    </group>
+                    <group string="Counting UoM Hierarchy (coarse to fine)">
+                        <field name="uom_line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="uom_id"/>
+                                <field name="factor_to_base"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_counting_group" model="ir.actions.act_window">
+        <field name="name">Counting Groups</field>
+        <field name="res_model">dsd.counting.group</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aggregation Categories -->
+    <record id="view_dsd_aggregation_list" model="ir.ui.view">
+        <field name="name">dsd.aggregation.list</field>
+        <field name="model">dsd.aggregation</field>
+        <field name="arch" type="xml">
+            <list string="Aggregation Categories">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="uom_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_aggregation_form" model="ir.ui.view">
+        <field name="name">dsd.aggregation.form</field>
+        <field name="model">dsd.aggregation</field>
+        <field name="arch" type="xml">
+            <form string="Aggregation Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="uom_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_aggregation" model="ir.actions.act_window">
+        <field name="name">Aggregation Categories</field>
+        <field name="res_model">dsd.aggregation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Tolerance Types -->
+    <record id="view_dsd_tolerance_type_list" model="ir.ui.view">
+        <field name="name">dsd.tolerance.type.list</field>
+        <field name="model">dsd.tolerance.type</field>
+        <field name="arch" type="xml">
+            <list string="Tolerance Types">
+                <field name="code"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_tolerance_type_form" model="ir.ui.view">
+        <field name="name">dsd.tolerance.type.form</field>
+        <field name="model">dsd.tolerance.type</field>
+        <field name="arch" type="xml">
+            <form string="Tolerance Type">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="description"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_tolerance_type" model="ir.actions.act_window">
+        <field name="name">Tolerance Types</field>
+        <field name="res_model">dsd.tolerance.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Tolerance Groups -->
+    <record id="view_dsd_tolerance_group_list" model="ir.ui.view">
+        <field name="name">dsd.tolerance.group.list</field>
+        <field name="model">dsd.tolerance.group</field>
+        <field name="arch" type="xml">
+            <list string="Tolerance Groups">
+                <field name="name"/>
+                <field name="tolerance_type_id"/>
+                <field name="partner_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_tolerance_group_form" model="ir.ui.view">
+        <field name="name">dsd.tolerance.group.form</field>
+        <field name="model">dsd.tolerance.group</field>
+        <field name="arch" type="xml">
+            <form string="Tolerance Group">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="tolerance_type_id"/>
+                        <field name="partner_id"/>
+                        <field name="active"/>
+                    </group>
+                    <group string="Thresholds">
+                        <field name="line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="check_kind"/>
+                                <field name="threshold"/>
+                                <field name="severity"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_tolerance_group" model="ir.actions.act_window">
+        <field name="name">Tolerance Groups</field>
+        <field name="res_model">dsd.tolerance.group</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Reasons -->
+    <record id="view_dsd_reason_list" model="ir.ui.view">
+        <field name="name">dsd.reason.list</field>
+        <field name="model">dsd.reason</field>
+        <field name="arch" type="xml">
+            <list string="Reasons">
+                <field name="scope" groups="base.group_no_one"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="blocks_settlement"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_reason_form" model="ir.ui.view">
+        <field name="name">dsd.reason.form</field>
+        <field name="model">dsd.reason</field>
+        <field name="arch" type="xml">
+            <form string="Reason">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="scope"/>
+                        <field name="blocks_settlement"/>
+                        <field name="needs_reschedule"
+                               invisible="scope != 'visit_outcome'"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_reason" model="ir.actions.act_window">
+        <field name="name">Reason Codes</field>
+        <field name="res_model">dsd.reason</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

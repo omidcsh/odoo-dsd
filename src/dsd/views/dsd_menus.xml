@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dsd_root"
+              name="DSD"
+              sequence="25"
+              groups="dsd.group_dsd_driver"/>
+
+    <menuitem id="menu_dsd_master"
+              name="Master Data"
+              parent="menu_dsd_root"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_route"
+              parent="menu_dsd_master"
+              action="action_dsd_route"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_driver"
+              parent="menu_dsd_master"
+              action="action_dsd_driver"
+              sequence="20"/>
+
+    <menuitem id="menu_dsd_van"
+              parent="menu_dsd_master"
+              action="action_dsd_van"
+              sequence="30"/>
+
+    <menuitem id="menu_dsd_config"
+              name="Configuration"
+              parent="menu_dsd_root"
+              groups="dsd.group_dsd_user"
+              sequence="90"/>
+
+    <menuitem id="menu_dsd_license_category"
+              parent="menu_dsd_config"
+              action="action_dsd_license_category"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_lock_period"
+              parent="menu_dsd_config"
+              action="action_dsd_lock_period"
+              sequence="20"/>
+
+    <menuitem id="menu_dsd_dsd_group"
+              parent="menu_dsd_config"
+              action="action_dsd_dsd_group"
+              sequence="30"/>
+
+    <menuitem id="menu_dsd_counting_group"
+              parent="menu_dsd_config"
+              action="action_dsd_counting_group"
+              sequence="40"/>
+
+    <menuitem id="menu_dsd_aggregation"
+              parent="menu_dsd_config"
+              action="action_dsd_aggregation"
+              sequence="50"/>
+
+    <menuitem id="menu_dsd_tolerance"
+              name="Tolerances"
+              parent="menu_dsd_config"
+              groups="dsd.group_dsd_settlement"
+              sequence="60"/>
+
+    <menuitem id="menu_dsd_tolerance_type"
+              parent="menu_dsd_tolerance"
+              action="action_dsd_tolerance_type"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_tolerance_group"
+              parent="menu_dsd_tolerance"
+              action="action_dsd_tolerance_group"
+              sequence="20"/>
+
+    <menuitem id="menu_dsd_reason"
+              parent="menu_dsd_config"
+              action="action_dsd_reason"
+              groups="dsd.group_dsd_dispatcher"
+              sequence="70"/>
+</odoo>

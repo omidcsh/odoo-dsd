@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="fleet_vehicle_view_form_dsd" model="ir.ui.view">
+        <field name="name">fleet.vehicle.view.form.dsd</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='page_model']" position="after">
+                <page string="DSD" name="dsd_vehicle">
+                    <group>
+                        <group string="Fleet Role">
+                            <field name="dsd_vehicle_type"/>
+                            <field name="dsd_is_own_vehicle"/>
+                            <field name="dsd_trailer_of_id"
+                                   invisible="dsd_vehicle_type != 'trailer'"/>
+                            <field name="dsd_license_category_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Van Stock">
+                            <field name="dsd_is_van"/>
+                            <field name="dsd_van_location_id"/>
+                            <field name="dsd_van_damaged_location_id"/>
+                        </group>
+                        <group string="Capacity Overrides">
+                            <field name="variable_capacity"/>
+                            <field name="dsd_max_stops_override"/>
+                            <field name="dsd_max_duration_override"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dsd_van" model="ir.actions.act_window">
+        <field name="name">Vehicles</field>
+        <field name="res_model">fleet.vehicle</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('dsd_is_van', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No DSD vehicles yet</p>
+            <p>Create a fleet vehicle with a DSD vehicle type to manage its van stock location.</p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Units of measure: crate & pallet on the Unit reference (Odoo 20 hierarchy) -->
+    <record id="uom_crate" model="uom.uom">
+        <field name="name">Crates</field>
+        <field name="relative_factor" eval="24"/>
+        <field name="relative_uom_id" ref="uom.product_uom_unit"/>
+    </record>
+    <record id="uom_pallet" model="uom.uom">
+        <field name="name">Pallets</field>
+        <field name="relative_factor" eval="48"/>
+        <field name="relative_uom_id" ref="dsd.uom_crate"/>
+    </record>
+
+    <!-- Aggregation category (SAP: totals in crates) -->
+    <record id="aggregation_crates" model="dsd.aggregation">
+        <field name="name">Crates</field>
+        <field name="code">CRATE</field>
+        <field name="uom_id" ref="dsd.uom_crate"/>
+    </record>
+
+    <!-- Counting group: count pallets, then crates, then units -->
+    <record id="counting_group_beverage" model="dsd.counting.group">
+        <field name="name">Beverage Crates</field>
+        <field name="code">BEV-CRATE</field>
+    </record>
+    <record id="counting_uom_pallet" model="dsd.counting.group.uom">
+        <field name="counting_group_id" ref="dsd.counting_group_beverage"/>
+        <field name="sequence" eval="10"/>
+        <field name="uom_id" ref="dsd.uom_pallet"/>
+    </record>
+    <record id="counting_uom_crate" model="dsd.counting.group.uom">
+        <field name="counting_group_id" ref="dsd.counting_group_beverage"/>
+        <field name="sequence" eval="20"/>
+        <field name="uom_id" ref="dsd.uom_crate"/>
+    </record>
+    <record id="counting_uom_unit" model="dsd.counting.group.uom">
+        <field name="counting_group_id" ref="dsd.counting_group_beverage"/>
+        <field name="sequence" eval="30"/>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+    </record>
+
+    <!-- Product DSD grouping -->
+    <record id="dsd_group_daily" model="dsd.dsd.group">
+        <field name="name">Daily Delivery Goods</field>
+        <field name="code">DAILY</field>
+        <field name="calendar_kind">delivery</field>
+    </record>
+    <record id="dsd_group_visit" model="dsd.dsd.group">
+        <field name="name">Weekly Visit Goods</field>
+        <field name="code">WEEKLY</field>
+        <field name="calendar_kind">visit</field>
+    </record>
+
+    <!-- Tolerance setup -->
+    <record id="tolerance_type_standard" model="dsd.tolerance.type">
+        <field name="name">Standard Goods</field>
+        <field name="code">STD</field>
+    </record>
+    <record id="tolerance_group_standard" model="dsd.tolerance.group">
+        <field name="name">Standard</field>
+        <field name="tolerance_type_id" ref="dsd.tolerance_type_standard"/>
+    </record>
+    <record id="tolerance_line_standard_qty" model="dsd.tolerance.group.line">
+        <field name="group_id" ref="dsd.tolerance_group_standard"/>
+        <field name="check_kind">qty_abs</field>
+        <field name="threshold" eval="2"/>
+        <field name="severity">warn</field>
+    </record>
+    <record id="tolerance_line_standard_cash" model="dsd.tolerance.group.line">
+        <field name="group_id" ref="dsd.tolerance_group_standard"/>
+        <field name="check_kind">value_abs</field>
+        <field name="threshold" eval="10"/>
+        <field name="severity">warn</field>
+    </record>
+
+    <!-- Cash journal for collections (deterministic demo ref) -->
+    <record id="dsd_cash_journal_demo" model="account.journal">
+        <field name="name">DSD Van Cash</field>
+        <field name="code">DSDCASH</field>
+        <field name="type">cash</field>
+        <field name="company_id" ref="base.main_company"/>
+    </record>
+
+    <!-- Vehicles: two vans from the demo models -->
+    <record id="van_1" model="fleet.vehicle">
+        <field name="model_id" ref="fleet.model_golf_8"/>
+        <field name="category_id" ref="fleet.model_category_compact"/>
+        <field name="license_plate">DSD-VAN-001</field>
+        <field name="dsd_vehicle_type">van</field>
+        <field name="dsd_license_category_ids" eval="[(6, 0, [ref('dsd.lic_b')])]"/>
+    </record>
+    <record id="van_2" model="fleet.vehicle">
+        <field name="model_id" ref="fleet.model_focus"/>
+        <field name="category_id" ref="fleet.model_category_suv"/>
+        <field name="license_plate">DSD-VAN-002</field>
+        <field name="dsd_vehicle_type">van</field>
+        <field name="dsd_license_category_ids" eval="[(6, 0, [ref('dsd.lic_c1')])]"/>
+    </record>
+
+    <!-- Drivers: two demo employees become DSD drivers -->
+    <record id="driver_1" model="hr.employee">
+        <field name="name">Dan Driver</field>
+        <field name="dsd_active_driver" eval="True"/>
+        <field name="license_category_ids" eval="[(6, 0, [ref('dsd.lic_b'), ref('dsd.lic_c1')])]"/>
+        <field name="default_vehicle_id" ref="dsd.van_1"/>
+    </record>
+    <record id="driver_2" model="hr.employee">
+        <field name="name">Vera Vanseller</field>
+        <field name="dsd_active_driver" eval="True"/>
+        <field name="license_category_ids" eval="[(6, 0, [ref('dsd.lic_b'), ref('dsd.lic_c1')])]"/>
+        <field name="default_vehicle_id" ref="dsd.van_2"/>
+        <field name="dsd_max_discount_pct" eval="5"/>
+    </record>
+
+    <!-- Route -->
+    <record id="route_north" model="dsd.route">
+        <field name="name">North City Run</field>
+        <field name="code">NORTH</field>
+        <field name="warehouse_id" ref="stock.warehouse0"/>
+        <field name="default_driver_id" ref="dsd.driver_1"/>
+        <field name="default_vehicle_id" ref="dsd.van_1"/>
+        <field name="cap_stops" eval="True"/>
+        <field name="max_stops" eval="12"/>
+    </record>
+
+    <!-- Customer DSD profiles on demo partners -->
+    <record id="partner_dsd_1" model="res.partner">
+        <field name="name">Corner Shop Nord</field>
+        <field name="dsd_route_id" ref="dsd.route_north"/>
+        <field name="dsd_receiving_hours">Mon–Sat 07:00–12:00</field>
+        <field name="dsd_collection_type">on_delivery</field>
+        <field name="dsd_accepted_journal_ids" eval="[(6, 0, [ref('dsd.dsd_cash_journal_demo')])]"/>
+        <field name="dsd_pod_or_invoice">invoice</field>
+        <field name="dsd_barcode">5412345000111</field>
+        <field name="dsd_credit_limit" eval="500"/>
+    </record>
+    <record id="partner_dsd_2" model="res.partner">
+        <field name="name">Bistro Süd</field>
+        <field name="dsd_route_id" ref="dsd.route_north"/>
+        <field name="dsd_pod_or_invoice">pod</field>
+        <field name="dsd_barcode">5412345000228</field>
+    </record>
+
+    <!-- Products: two storable beverage cases with DSD data -->
+    <record id="product_water_case" model="product.template">
+        <field name="name">Mineral Water 0.5L (Case of 24)</field>
+        <field name="type">consu</field>
+        <field name="is_storable" eval="True"/>
+        <field name="list_price" eval="6.5"/>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+        <field name="dsd_group_id" ref="dsd.dsd_group_daily"/>
+        <field name="counting_group_id" ref="dsd.counting_group_beverage"/>
+        <field name="tolerance_type_id" ref="dsd.tolerance_type_standard"/>
+        <field name="is_returnable" eval="True"/>
+    </record>
+    <record id="product_water_case_agg" model="dsd.product.aggregation">
+        <field name="product_tmpl_id" ref="dsd.product_water_case"/>
+        <field name="aggregation_id" ref="dsd.aggregation_crates"/>
+        <field name="factor" eval="1.0"/>
+    </record>
+    <record id="product_lemonade_case" model="product.template">
+        <field name="name">Lemonade 0.33L (Case of 24)</field>
+        <field name="type">consu</field>
+        <field name="is_storable" eval="True"/>
+        <field name="list_price" eval="9.9"/>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+        <field name="dsd_group_id" ref="dsd.dsd_group_daily"/>
+        <field name="counting_group_id" ref="dsd.counting_group_beverage"/>
+        <field name="tolerance_type_id" ref="dsd.tolerance_type_standard"/>
+    </record>
+    <record id="product_lemonade_case_agg" model="dsd.product.aggregation">
+        <field name="product_tmpl_id" ref="dsd.product_lemonade_case"/>
+        <field name="aggregation_id" ref="dsd.aggregation_crates"/>
+        <field name="factor" eval="1.0"/>
+    </record>
+</odoo>

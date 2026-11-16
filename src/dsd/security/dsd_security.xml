@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_dsd" model="ir.module.category">
+        <field name="name">Direct Store Delivery</field>
+        <field name="description">Visit planning, tours, van stock and route settlement</field>
+        <field name="sequence">25</field>
+    </record>
+
+    <record id="res_groups_privilege_dsd" model="res.groups.privilege">
+        <field name="name">Direct Store Delivery</field>
+        <field name="category_id" ref="module_category_dsd"/>
+    </record>
+
+    <!-- Back-office planning user: master data + visit control -->
+    <record id="group_dsd_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[
+            (4, ref('base.group_user')),
+            (4, ref('stock.group_stock_user')),
+            (4, ref('sales_team.group_sale_salesman')),
+        ]"/>
+        <field name="comment">Back-office DSD planning: routes, drivers, visit plans and lists.</field>
+    </record>
+
+    <!-- Dispatcher: + tours, loading and checks -->
+    <record id="group_dsd_dispatcher" model="res.groups">
+        <field name="name">Dispatcher</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[(4, ref('group_dsd_user'))]"/>
+        <field name="comment">Builds tours, runs loading confirmations and check-out/check-in.</field>
+    </record>
+
+    <!-- Driver: console only; sees own lists/tours/settlements (record rule) -->
+    <record id="group_dsd_driver" model="res.groups">
+        <field name="name">Driver</field>
+        <field name="sequence">15</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[
+            (4, ref('base.group_user')),
+            (4, ref('stock.group_stock_user')),
+            (4, ref('sales_team.group_sale_salesman')),
+            (4, ref('account.group_account_invoice')),
+        ]"/>
+        <field name="comment">Road execution: driver console, deliveries, collections. Record rules limit visibility to own work.</field>
+    </record>
+
+    <!-- Supervisor: countersigns checks and force-accepts differences -->
+    <record id="group_dsd_supervisor" model="res.groups">
+        <field name="name">Supervisor</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[(4, ref('group_dsd_dispatcher'))]"/>
+    </record>
+
+    <!-- Settlement office: releases and runs settlement -->
+    <record id="group_dsd_settlement" model="res.groups">
+        <field name="name">Settlement</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[
+            (4, ref('group_dsd_user')),
+            (4, ref('account.group_account_invoice')),
+        ]"/>
+        <field name="comment">Reviews tours, runs difference determination and the final settlement run.</field>
+    </record>
+
+    <!-- Manager: everything incl. configuration -->
+    <record id="group_dsd_manager" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">50</field>
+        <field name="privilege_id" ref="res_groups_privilege_dsd"/>
+        <field name="implied_ids" eval="[
+            (4, ref('group_dsd_supervisor')),
+            (4, ref('group_dsd_settlement')),
+            (4, ref('group_dsd_driver')),
+            (4, ref('stock.group_stock_manager')),
+        ]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
+        <field name="comment">Full DSD configuration and operations.</field>
+    </record>
+</odoo>

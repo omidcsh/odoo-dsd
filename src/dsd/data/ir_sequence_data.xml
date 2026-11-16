@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_dsd_driver" model="ir.sequence">
+        <field name="name">DSD Driver</field>
+        <field name="code">dsd.driver</field>
+        <field name="prefix">DRV-</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

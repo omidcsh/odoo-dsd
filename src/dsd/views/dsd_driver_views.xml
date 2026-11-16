@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_dsd" model="ir.ui.view">
+        <field name="name">hr.employee.form.dsd</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='work_information']" position="after">
+                <page string="DSD" name="dsd_driver" invisible="not dsd_active_driver">
+                    <group>
+                        <group string="Driver">
+                            <field name="dsd_active_driver"/>
+                            <field name="dsd_code"/>
+                            <field name="license_category_ids" widget="many2many_tags"/>
+                            <field name="default_vehicle_id"/>
+                            <field name="default_route_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Commercial">
+                            <field name="dsd_sales_team_id"/>
+                            <field name="dsd_max_discount_pct"/>
+                        </group>
+                        <group string="Cash Custody">
+                            <field name="dsd_cash_journal_id"/>
+                            <field name="dsd_settlement_partner_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_list_dsd" model="ir.ui.view">
+        <field name="name">hr.employee.list.dsd</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.hr_employee_list_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="dsd_code" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dsd_driver" model="ir.actions.act_window">
+        <field name="name">Drivers</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('dsd_active_driver', '=', True)]</field>
+        <field name="context">{'default_dsd_active_driver': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No DSD drivers yet</p>
+            <p>Open an employee and tick "Active DSD Driver", or create one here.</p>
+        </field>
+    </record>
+</odoo>

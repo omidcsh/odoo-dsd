@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Driver's license categories (EU-style defaults; adjust per market) -->
+    <record id="lic_b" model="dsd.license.category">
+        <field name="name">Category B (car)</field>
+        <field name="code">B</field>
+    </record>
+    <record id="lic_c1" model="dsd.license.category">
+        <field name="name">Category C1 (light truck)</field>
+        <field name="code">C1</field>
+    </record>
+    <record id="lic_c" model="dsd.license.category">
+        <field name="name">Category C (truck)</field>
+        <field name="code">C</field>
+    </record>
+    <record id="lic_ce" model="dsd.license.category">
+        <field name="name">Category CE (truck + trailer)</field>
+        <field name="code">CE</field>
+    </record>
+
+    <!-- Check-out / check-in difference reasons -->
+    <record id="reason_co_counting_error" model="dsd.reason">
+        <field name="name">Counting error</field>
+        <field name="code">CO-CNT</field>
+        <field name="scope">checkout_diff</field>
+    </record>
+    <record id="reason_co_load_short" model="dsd.reason">
+        <field name="name">Short-loaded at warehouse</field>
+        <field name="code">CO-SHORT</field>
+        <field name="scope">checkout_diff</field>
+        <field name="blocks_settlement" eval="True"/>
+    </record>
+    <record id="reason_ci_counting_error" model="dsd.reason">
+        <field name="name">Counting error</field>
+        <field name="code">CI-CNT</field>
+        <field name="scope">checkin_diff</field>
+    </record>
+    <record id="reason_ci_goods_missing" model="dsd.reason">
+        <field name="name">Goods missing (unexplained)</field>
+        <field name="code">CI-MISS</field>
+        <field name="scope">checkin_diff</field>
+        <field name="blocks_settlement" eval="True"/>
+    </record>
+    <record id="reason_ci_damaged" model="dsd.reason">
+        <field name="name">Damaged on tour</field>
+        <field name="code">CI-DMG</field>
+        <field name="scope">checkin_diff</field>
+    </record>
+    <record id="reason_cash_over" model="dsd.reason">
+        <field name="name">Cash surplus at check-in</field>
+        <field name="code">CI-CASH+</field>
+        <field name="scope">checkin_diff</field>
+    </record>
+    <record id="reason_cash_short" model="dsd.reason">
+        <field name="name">Cash shortage at check-in</field>
+        <field name="code">CI-CASH-</field>
+        <field name="scope">checkin_diff</field>
+        <field name="blocks_settlement" eval="True"/>
+    </record>
+
+    <!-- Delivery / order change reasons -->
+    <record id="reason_dlvr_customer_refused" model="dsd.reason">
+        <field name="name">Customer refused (partial)</field>
+        <field name="code">DL-REF</field>
+        <field name="scope">delivery_change</field>
+    </record>
+    <record id="reason_dlvr_out_of_stock_van" model="dsd.reason">
+        <field name="name">Not on van / short shipped</field>
+        <field name="code">DL-OOS</field>
+        <field name="scope">delivery_change</field>
+    </record>
+    <record id="reason_dlvr_damaged" model="dsd.reason">
+        <field name="name">Damaged goods not delivered</field>
+        <field name="code">DL-DMG</field>
+        <field name="scope">delivery_change</field>
+    </record>
+    <record id="reason_dlvr_wrong_order" model="dsd.reason">
+        <field name="name">Wrong order / not ordered</field>
+        <field name="code">DL-WRG</field>
+        <field name="scope">delivery_change</field>
+    </record>
+    <record id="reason_ord_customer_cancel" model="dsd.reason">
+        <field name="name">Cancelled by customer</field>
+        <field name="code">OR-CNL</field>
+        <field name="scope">order_change</field>
+    </record>
+    <record id="reason_ord_price_dispute" model="dsd.reason">
+        <field name="name">Price dispute</field>
+        <field name="code">OR-PRC</field>
+        <field name="scope">order_change</field>
+    </record>
+
+    <!-- Visit outcomes -->
+    <record id="reason_visit_closed" model="dsd.reason">
+        <field name="name">Customer closed</field>
+        <field name="code">V-CLOSED</field>
+        <field name="scope">visit_outcome</field>
+    </record>
+    <record id="reason_visit_no_time" model="dsd.reason">
+        <field name="name">Out of time</field>
+        <field name="code">V-TIME</field>
+        <field name="scope">visit_outcome</field>
+        <field name="needs_reschedule" eval="True"/>
+    </record>
+    <record id="reason_visit_no_cash" model="dsd.reason">
+        <field name="name">No cash / credit hold</field>
+        <field name="code">V-CASH</field>
+        <field name="scope">visit_outcome</field>
+        <field name="needs_reschedule" eval="True"/>
+    </record>
+    <record id="reason_visit_refused" model="dsd.reason">
+        <field name="name">Customer refused visit</field>
+        <field name="code">V-REF</field>
+        <field name="scope">visit_outcome</field>
+    </record>
+    <record id="reason_visit_not_found" model="dsd.reason">
+        <field name="name">Address not found / inaccessible</field>
+        <field name="code">V-ADDR</field>
+        <field name="scope">visit_outcome</field>
+        <field name="needs_reschedule" eval="True"/>
+    </record>
+
+    <!-- Van stock adjustment reasons -->
+    <record id="reason_adj_breakage" model="dsd.reason">
+        <field name="name">Breakage</field>
+        <field name="code">AD-BRK</field>
+        <field name="scope">stock_adjust</field>
+    </record>
+    <record id="reason_adj_theft" model="dsd.reason">
+        <field name="name">Theft / loss (unexplained)</field>
+        <field name="code">AD-THF</field>
+        <field name="scope">stock_adjust</field>
+        <field name="blocks_settlement" eval="True"/>
+    </record>
+    <record id="reason_adj_expired" model="dsd.reason">
+        <field name="name">Expired / spoiled</field>
+        <field name="code">AD-EXP</field>
+        <field name="scope">stock_adjust</field>
+    </record>
+
+    <!-- Return reasons -->
+    <record id="reason_ret_damaged" model="dsd.reason">
+        <field name="name">Damaged product</field>
+        <field name="code">RT-DMG</field>
+        <field name="scope">return</field>
+    </record>
+    <record id="reason_ret_expired" model="dsd.reason">
+        <field name="name">Expired product</field>
+        <field name="code">RT-EXP</field>
+        <field name="scope">return</field>
+    </record>
+    <record id="reason_ret_wrong" model="dsd.reason">
+        <field name="name">Wrong product delivered</field>
+        <field name="code">RT-WRG</field>
+        <field name="scope">return</field>
+    </record>
+    <record id="reason_ret_unsold" model="dsd.reason">
+        <field name="name">Unsold / not needed</field>
+        <field name="code">RT-UNS</field>
+        <field name="scope">return</field>
+    </record>
+    <record id="reason_ret_empties" model="dsd.reason">
+        <field name="name">Returnable empties</field>
+        <field name="code">RT-EMP</field>
+        <field name="scope">return</field>
+    </record>
+</odoo>

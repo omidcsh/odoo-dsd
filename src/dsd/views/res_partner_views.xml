@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_dsd" model="ir.ui.view">
+        <field name="name">res.partner.view.form.dsd</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']" position="after">
+                <page string="DSD" name="dsd_customer">
+                    <group>
+                        <group string="Visit Information">
+                            <field name="dsd_route_id"/>
+                            <field name="dsd_visit_required"/>
+                            <field name="dsd_receiving_hours"/>
+                            <field name="dsd_unloading_point_id"/>
+                            <field name="dsd_driver_notes"/>
+                        </group>
+                        <group string="Payments &amp; Documents">
+                            <field name="dsd_collection_type"/>
+                            <field name="dsd_accepted_journal_ids" widget="many2many_tags"
+                                   invisible="dsd_collection_type != 'on_delivery'"/>
+                            <field name="dsd_cash_only"/>
+                            <field name="dsd_pod_or_invoice"/>
+                            <field name="dsd_invoice_generation"/>
+                            <field name="dsd_credit_limit"/>
+                            <field name="dsd_customer_group_id"/>
+                        </group>
+                        <group string="Identity">
+                            <field name="dsd_barcode"/>
+                            <field name="dsd_is_one_time"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

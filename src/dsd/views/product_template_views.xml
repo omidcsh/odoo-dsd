@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_dsd" model="ir.ui.view">
+        <field name="name">product.template.view.form.dsd</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="DSD" name="dsd_product">
+                    <group>
+                        <group string="DSD Data">
+                            <field name="dsd_group_id"/>
+                            <field name="counting_group_id"/>
+                            <field name="tolerance_type_id"/>
+                        </group>
+                        <group string="Returnables">
+                            <field name="is_returnable"/>
+                        </group>
+                    </group>
+                    <group string="Aggregation Totals">
+                        <field name="dsd_aggregation_line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="aggregation_id"/>
+                                <field name="uom_id"/>
+                                <field name="factor"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

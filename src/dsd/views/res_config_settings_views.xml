@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_dsd" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.dsd</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="40"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="DSD" string="DSD" name="dsd" groups="dsd.group_dsd_manager">
+
+                    <block title="Visit Planning" name="dsd_planning_container">
+                        <setting id="dsd_default_warehouse" help="Warehouse where tours depart and vans are loaded">
+                            <field name="dsd_default_warehouse_id"/>
+                        </setting>
+                        <setting id="dsd_planning_horizon" help="How many days ahead customer visit appointments are materialized">
+                            <field name="dsd_planning_horizon_days"/>
+                        </setting>
+                    </block>
+
+                    <block title="Tour Execution" name="dsd_execution_container">
+                        <setting id="dsd_stock_visibility" help="Keep van stock isolated from warehouse availability">
+                            <field name="dsd_stock_visibility"/>
+                        </setting>
+                        <setting id="dsd_loading_confirmation_required" help="Require a loading confirmation before check-out">
+                            <field name="dsd_loading_confirmation_required"/>
+                        </setting>
+                        <setting id="dsd_checkout_required" help="Require check-out (goods and cash) before a tour starts">
+                            <field name="dsd_checkout_required"/>
+                        </setting>
+                        <setting id="dsd_checkin_required" help="Require check-in when the tour returns">
+                            <field name="dsd_checkin_required"/>
+                        </setting>
+                    </block>
+
+                    <block title="Route Settlement" name="dsd_settlement_container" groups="dsd.group_dsd_settlement">
+                        <setting id="dsd_settlement_trigger" help="When the final settlement run may start">
+                            <field name="dsd_settlement_trigger" class="o_light_label"/>
+                        </setting>
+                        <setting id="dsd_auto_release" help="Release settlements automatically when differences are within tolerance">
+                            <field name="dsd_auto_release_when_clean"/>
+                        </setting>
+                        <setting id="dsd_cash_journal" help="Journal for driver cash collections">
+                            <field name="dsd_cash_journal_id"/>
+                        </setting>
+                        <setting id="dsd_inv_diff_accounts" help="Accounts for accepted stock differences">
+                            <div class="content-group">
+                                <div class="row mt8">
+                                    <label for="dsd_inv_diff_gain_account_id" class="col-lg-3"/>
+                                    <field name="dsd_inv_diff_gain_account_id"/>
+                                </div>
+                                <div class="row">
+                                    <label for="dsd_inv_diff_loss_account_id" class="col-lg-3"/>
+                                    <field name="dsd_inv_diff_loss_account_id"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting id="dsd_cash_diff_account" help="Account for accepted cash differences">
+                            <field name="dsd_cash_diff_account_id"/>
+                        </setting>
+                        <setting id="dsd_driver_clearing_account" help="Clearing account carrying the driver's cash custody balance">
+                            <field name="dsd_driver_clearing_account_id"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>
