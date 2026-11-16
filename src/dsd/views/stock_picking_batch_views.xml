@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Tour (stock.picking.batch) ===================== -->
+    <record id="view_dsd_tour_form" model="ir.ui.view">
+        <field name="name">stock.picking.batch.form.dsd.tour</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="inherit_id" ref="stock.stock_picking_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_dsd_confirm" type="object" string="Confirm Tour"
+                        class="btn-primary" invisible="dsd_state != 'draft'"
+                        groups="dsd.group_dsd_dispatcher"/>
+                <button name="action_dsd_load" type="object" string="Prepare Van Load-Out"
+                        invisible="dsd_state not in ('draft', 'confirmed')"
+                        groups="dsd.group_dsd_dispatcher"/>
+                <button name="action_view_materials" type="object" string="Materials"
+                        invisible="not picking_ids"/>
+                <field name="dsd_state" widget="statusbar" groups="dsd.group_dsd_driver"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning" role="alert"
+                     invisible="not dsd_attention">
+                    Tour validation problems — see the DSD tab.
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="DSD Tour" name="dsd_tour">
+                    <group>
+                        <group string="Tour">
+                            <field name="dsd_state" invisible="1"/>
+                            <field name="dsd_attention" invisible="1"/>
+                            <field name="dsd_route_id"/>
+                            <field name="dsd_visit_list_id" readonly="bool(dsd_visit_list_id)"/>
+                            <field name="dsd_execution_date"/>
+                        </group>
+                        <group string="Resources">
+                            <field name="dsd_driver2_id"/>
+                            <field name="dsd_trailer_id"/>
+                            <field name="dsd_load_picking_id"/>
+                            <field name="dsd_seal_numbers"/>
+                        </group>
+                        <group string="Planned Load">
+                            <field name="dsd_planned_weight"/>
+                            <field name="dsd_weight_usage"/>
+                            <field name="dsd_planned_volume"/>
+                            <field name="dsd_volume_usage"/>
+                            <field name="dsd_lu_total"/>
+                            <field name="dsd_lu_capacity"/>
+                            <field name="dsd_lu_usage"/>
+                            <field name="dsd_stop_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_dsd_tour_kanban" model="ir.ui.view">
+        <field name="name">stock.picking.batch.kanban.dsd.tour</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="dsd_state" sample="1">
+                <field name="name"/>
+                <field name="dsd_state"/>
+                <field name="dsd_route_id"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id"/>
+                <field name="dsd_execution_date"/>
+                <field name="dsd_stop_count"/>
+                <field name="dsd_attention"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div>
+                            <b><t t-out="record.name.value"/></b>
+                            <div><t t-out="record.dsd_execution_date.value or '?'"/></div>
+                            <div class="text-muted">
+                                <t t-out="record.driver_id.value or '?'"/> ·
+                                <t t-out="record.vehicle_id.value or '?'"/> ·
+                                <t t-out="record.dsd_stop_count.value"/> stops
+                            </div>
+                            <div t-if="record.dsd_attention.value"
+                                 class="text-warning">⚠ needs attention</div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_dsd_tour_list" model="ir.ui.view">
+        <field name="name">stock.picking.batch.list.dsd.tour</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="inherit_id" ref="stock.stock_picking_batch_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="dsd_route_id" optional="show"/>
+                <field name="dsd_execution_date" optional="show"/>
+                <field name="dsd_state" optional="show" widget="badge"
+                       decoration-info="dsd_state == 'in_progress'"
+                       decoration-success="dsd_state == 'settled'"
+                       decoration-warning="dsd_attention"/>
+                <field name="dsd_attention" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_dsd_tour_search" model="ir.ui.view">
+        <field name="name">stock.picking.batch.search.dsd.tour</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="arch" type="xml">
+            <search string="Tours">
+                <field name="name"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id"/>
+                <field name="dsd_route_id"/>
+                <filter name="dsd_generated" string="DSD Tours"
+                        domain="[('dsd_route_id', '!=', False)]"/>
+                <filter name="dsd_open" string="Open Tours"
+                        domain="[('dsd_state', 'not in', ('settled', 'cancelled'))]"/>
+                <filter name="dsd_attention" string="Needs Attention"
+                        domain="[('dsd_attention', '=', True)]"/>
+                <group>
+                    <filter name="group_dsd_state" string="Tour Status"
+                            context="{'group_by': 'dsd_state'}"/>
+                    <filter name="group_dsd_route" string="Route"
+                            context="{'group_by': 'dsd_route_id'}"/>
+                    <filter name="group_dsd_date" string="Tour Date"
+                            context="{'group_by': 'dsd_execution_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dsd_tour" model="ir.actions.act_window">
+        <field name="name">Tours</field>
+        <field name="res_model">stock.picking.batch</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('dsd_route_id', '!=', False)]</field>
+        <field name="search_view_id" ref="view_dsd_tour_search"/>
+        <field name="views" eval="[
+            (ref('view_dsd_tour_kanban'), 'kanban'),
+            (ref('stock.stock_picking_batch_tree'), 'list'),
+            (ref('stock.stock_picking_batch_form'), 'form'),
+        ]"/>
+        <field name="context">{'search_default_dsd_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tours yet</p>
+            <p>Generate tours from due deliveries and visit lists, or create one manually.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Materials overview dialog ===================== -->
+    <record id="view_dsd_tour_materials_form" model="ir.ui.view">
+        <field name="name">dsd.tour.materials.form</field>
+        <field name="model">dsd.tour.materials</field>
+        <field name="arch" type="xml">
+            <form string="Tour Materials">
+                <sheet>
+                    <group>
+                        <field name="tour_id"/>
+                        <field name="tour_state"/>
+                        <field name="tour_stop_count"/>
+                    </group>
+                    <field name="materials_html" nolabel="1" readonly="1"/>
+                </sheet>
+                <footer>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== Speculative load wizard ===================== -->
+    <record id="view_dsd_speculative_load_form" model="ir.ui.view">
+        <field name="name">dsd.speculative.load.form</field>
+        <field name="model">dsd.speculative.load</field>
+        <field name="arch" type="xml">
+            <form string="Speculative Load">
+                <group>
+                    <field name="visit_list_id"/>
+                    <field name="warehouse_id"/>
+                    <field name="van_id"/>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="product_id"/>
+                        <field name="quantity"/>
+                        <field name="uom_id"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_create" type="object" string="Create Load"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_speculative_load" model="ir.actions.act_window">
+        <field name="name">Speculative Load</field>
+        <field name="res_model">dsd.speculative.load</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ===================== Tour generation wizard ===================== -->
+    <record id="view_dsd_tour_generate_form" model="ir.ui.view">
+        <field name="name">dsd.tour.generate.form</field>
+        <field name="model">dsd.tour.generate</field>
+        <field name="arch" type="xml">
+            <form string="Generate Tours">
+                <field name="state" invisible="1"/>
+                <group invisible="state == 'done'">
+                    <group string="Period">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group string="Options">
+                        <field name="route_ids" widget="many2many_tags"/>
+                        <field name="include_new_customers"/>
+                    </group>
+                </group>
+                <group invisible="state != 'done'">
+                    <field name="result_html" nolabel="1" readonly="1" colspan="2"/>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate"
+                            class="btn-primary" invisible="state == 'done'"/>
+                    <button name="action_view_created" type="object"
+                            string="Open Tours" invisible="state != 'done'"/>
+                    <button string="Close" special="cancel" class="btn-secondary"
+                            invisible="state == 'form'"/>
+                    <button string="Cancel" special="cancel" invisible="state == 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_tour_generate" model="ir.actions.act_window">
+        <field name="name">Generate Tours</field>
+        <field name="res_model">dsd.tour.generate</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

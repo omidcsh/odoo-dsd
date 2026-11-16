@@ -60,7 +60,10 @@ class FleetVehicle(models.Model):
         return super().unlink()
 
     def _get_van_parent_location(self):
-        """Parent stock location: the vehicle company's main warehouse stock."""
+        """Parent stock location: a 'Van Fleet' area inside the warehouse,
+        SIBLING of the stock location (not a child) — quants under the stock
+        location would leak into warehouse availability, breaking van
+        isolation."""
         self.ensure_one()
         company = self.company_id or self.env.company
         warehouse = self.env['stock.warehouse'].search(
@@ -69,7 +72,17 @@ class FleetVehicle(models.Model):
             raise ValidationError(self.env._(
                 'Company %s has no warehouse to place the van stock location of %s.',
                 company.name, self.name))
-        return warehouse.lot_stock_id
+        van_area = self.env['stock.location'].with_context(active_test=False).search(
+            [('location_id', '=', warehouse.view_location_id.id),
+             ('name', '=', _('Van Fleet'))], limit=1)
+        if not van_area:
+            van_area = self.env['stock.location'].create({
+                'name': _('Van Fleet'),
+                'usage': 'view',
+                'location_id': warehouse.view_location_id.id,
+                'company_id': company.id,
+            })
+        return van_area
 
     def _sync_van_location(self):
         for vehicle in self:

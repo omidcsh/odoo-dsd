@@ -125,6 +125,17 @@ class DsdVisitList(models.Model):
         return lists
 
     def write(self, vals):
+        # SAP parity: once a shipment/tour references the list, header data and
+        # stops are locked; only the driver/vehicle swap remains open.
+        locked_keys = {'execution_date', 'plan_id', 'plan_type_id', 'route_id',
+                       'inactive', 'line_ids'}
+        for visit_list in self:
+            if visit_list.tour_id and locked_keys & vals.keys() \
+                    and not self.env.context.get('dsd_allow_locked_list_edit'):
+                raise ValidationError(self.env._(
+                    'Visit list %s is locked: tour %s references it. Only the '
+                    'driver/vehicle can be swapped.',
+                    visit_list.name, visit_list.tour_id.display_name))
         result = super().write(vals)
         if vals.get('state') == 'cancelled':
             # cancelling releases the list's time-stream slots
