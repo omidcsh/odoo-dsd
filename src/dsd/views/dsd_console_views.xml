@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="console_shell" name="DSD Console Shell">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>DSD Console</title>
+                <t t-call-assets="web.assets_frontend" css_assets="true" js_assets="true"/>
+                <t t-call-assets="dsd.console_assets" css_assets="true" js_assets="true"/>
+            </head>
+            <body class="dsd-console-body">
+                <div id="dsd-console-root"/>
+            </body>
+        </html>
+    </template>
+</odoo>

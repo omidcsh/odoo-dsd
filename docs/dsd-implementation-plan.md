@@ -1,6 +1,6 @@
 # DSD (Direct Store Delivery) on Odoo 20 — Comprehensive Implementation Plan (v2, from scratch)
 
-- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phases 0–3 complete (2026-11-16).
+- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phases 0–4 complete (2026-11-16).
   Supersedes all prior plans and the `dsd_core` prototype.
   Phase 0 done: master data, security, settings, menus.
   Phase 1 done: visit control — plans, lists, appointments, generation, order proposals.
@@ -9,10 +9,16 @@
   Phase 3 done: loading confirmation (product/counting-group counting, reason-coded
   differences, itemize, seal-and-validate), check-out/check-in custody counts
   (goods + cash, supervisor countersign), reload wizard, final unload picking,
-  odometer records, state-timeline chatter. **71/71 tests green**; live smoke ran
-  the complete execution loop (SO → tour → load → LC → loaded → check-out → depart
-  → check-in → unload validated, van emptied).
-  Pending AC: manual browser pass over execution screens (§4.4 headless caveat).
+  odometer records, state-timeline chatter.
+  Phase 4 done: driver console v1 — assortment + deal conditions, `dsd.console`
+  service layer (today/stop/delivery/van-sale/collection/unplanned/resequence/
+  expense/van-adjust/check/reload), JSON API (`/dsd/api/v1/*`), OWL console UI
+  (phone-first), customer×product statistics + nightly cron, duplicate-appointment
+  guard. **89/89 tests green**; live smoke ran the full driver loop as a real
+  driver login (console → tour → stop → van sale + auto-invoice → cash collection
+  reconciled → paid → reload → check-in → stats), which surfaced and fixed the
+  driver-ACL boundary (§4.4 items 35–37).
+  Pending AC: manual browser pass over console + execution screens (§4.4 headless caveat).
 - **Target stack:** Odoo 20.0 Community (docker: `~/odoo-docker`, Postgres 16), local git only
 - **Built from:** full analysis of `sap-dsd/` reference set —
   SAP Help *Direct Store Delivery* (EHP8 SP25), *SAP DSD Configuration* guide + SP01/SP02/SP03 deltas,
@@ -360,6 +366,31 @@ assets grow. The old `dsd_core` is removed (§19.3).
     and would wrongly report an empty van.
 34. `fleet.vehicle` has no `odometer_ids` o2m in 20 — create
     `fleet.vehicle.odometer` records directly (vehicle_id, value, date).
+35. **Driver users hold no backend model grants** (fleet/stock/sale/account) —
+    the Driver `ir.access` rows cover `dsd.*` models only, and Odoo 20
+    *global* `ir.access` rows (group-less, "Default access for new users") are
+    domain **rules, not grants**. The console service is therefore the
+    security boundary: policy gates (ownership, discount authority, credit,
+    journal acceptance, assortment) run under the real user; all mechanics
+    (fleet lookups, picking validation, payment/invoice posting, quant
+    writes) run under `sudo()`. Do not "fix" this by sprinkling group
+    implies — the narrow service boundary is the design.
+36. Odoo 20 **silently filters** m2o/m2m reads through the reader's ACLs:
+    as a restricted user, `partner.dsd_accepted_journal_ids` returns `[]`
+    instead of raising. Never gate policy logic on non-sudo relational
+    reads of master data; read via sudo and enforce acceptance in code.
+37. **Unit-test envs inherit `su`**: `env(user=driver)` in a
+    `TransactionCase` still bypasses ACLs, so the suite can never catch
+    missing grants — the live smoke with a *real* driver login is the only
+    true ACL verification. Keep both gates green per phase.
+38. `write({'float_field': [list]})` is invalid — a list value is parsed as
+    x2many commands. Assign per record in a loop (`for m in moves:
+    m.quantity = m.product_uom_qty`).
+39. Multi-company leftovers on shared dev DBs (foreign-company journals,
+    vehicles) break company-scoped writes (payment `company_id` computes
+    NULL → NotNullViolation). Scope every smoke search by
+    `company_id in [env.company.id, False]`; smokes reset van/warehouse
+    stock and create fresh driver/customer identities per run.
 
 
 ---

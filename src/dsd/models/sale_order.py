@@ -17,10 +17,11 @@ class SaleOrder(models.Model):
         compute='_compute_dsd_proposal', string='Next Planned Visit',
         help='Earliest planned visit/delivery appointment for this customer within '
              'the lead-time window.')
+    dsd_applied_deal_ids = fields.Many2many(
+        'dsd.deal.condition', string='Applied Deals', copy=False)
 
     @api.depends('partner_id')
     def _compute_dsd_proposal(self):
-        Appointment = self.env['dsd.visit.appointment']
         for order in self:
             order.dsd_proposed_date = False
             order.dsd_route_id = order.dsd_route_id or (
@@ -53,3 +54,23 @@ class SaleOrder(models.Model):
                         date=appointment.date,
                         route=appointment.route_id.display_name or '-',
                     ))
+
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    is_dsd_free_goods = fields.Boolean(
+        string='DSD Free Goods', copy=False,
+        help='Deal-condition bonus line; excluded from deal quantity matching.')
+    dsd_visit_list_line_id = fields.Many2one(
+        'dsd.visit.list.line', copy=False, index='btree_not_null',
+        help='The stop this order line was captured on.')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        for line in lines:
+            order = line.order_id
+            if order.dsd_visit_list_line_id or order.dsd_route_id:
+                self.env['dsd.assortment'].check_line(order.partner_id, line.product_id)
+        return lines

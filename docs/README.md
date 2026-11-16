@@ -1,13 +1,15 @@
 # Odoo DSD Project Docs
 
 Direct Store Delivery on Odoo 20 Community (Docker at `~/odoo-docker`, database `odoo`).
-**Status: PLAN v2 — Phases 0–2 delivered (2026-11-16)** — module `src/dsd` installed on
-the dev DB with demo data, **62/62 tests green** on clean install, E2E 33/33 PASS.
-The old `dsd_core` prototype is fully removed. Phase 2 delivered tour preparation:
-tours on `stock.picking.batch` with SAP shipment validations, van load-out
-(aggregation picking + van-location isolation), speculative loads, and the dynamic
-tour-generation wizard with SAP capacity-limit order. Next: Phase 3 (tour execution:
-loading confirmation, check-out/in, reload, tour status automations).
+**Status: PLAN v2 — Phases 0–4 delivered (2026-11-16)** — module `src/dsd` installed on
+the dev DB with demo data, **89/89 tests green** on clean install, and the Phase 4 live
+smoke passed the full driver loop as a real driver login (console → tour → stop → van
+sale + auto-invoice → cash collection reconciled → paid → reload → check-in → stats).
+Delivered so far: master data & security (0), visit control (1), tour preparation on
+`stock.picking.batch` with van isolation (2), tour execution — loading confirmation,
+check-out/in custody counts, reload, unload (3), driver console v1 — OWL UI, JSON API,
+assortment + deal conditions, credit gate, customer statistics (4). Next: Phase 5
+(settlement engine: difference determination, final settlement run, collection clearing).
 
 - [DSD Implementation Plan v2](dsd-implementation-plan.md) — capability ledger (SAP→Odoo,
   build/simplify/defer/exclude), data model specs, tour/visit/settlement engines, driver
@@ -29,6 +31,11 @@ aggregation categories, tolerance types/groups, reason catalogs, license categor
 lock periods), security groups (user/dispatcher/driver/supervisor/settlement/manager),
 company settings incl. settlement accounts, demo dataset, plus visit control
 (plan types, plans, lists, appointments, generation wizard, order proposals).
-Phase 2 adds tours on `stock.picking.batch`. Deployed through the
+Phase 2 adds tours on `stock.picking.batch`; Phase 3 the execution loop (loading
+confirmation, check-out/in, reload, unload, odometer, status timeline); Phase 4 the
+driver console (OWL UI at `/dsd/console`, `/dsd/api/v1/*` JSON endpoints, assortment +
+deal-condition enforcement at van sales, credit-gated auto-invoicing, cash collection
+with reconciliation fallback, unplanned stops/resequencing, expenses, van adjustments,
+checks, reload requests, customer×product statistics). Deployed through the
 `~/odoo-docker/addons` volume (`/mnt/extra-addons`).
 

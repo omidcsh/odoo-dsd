@@ -78,11 +78,11 @@ class DsdCheckRecord(models.Model):
         stock and damaged sub-locations)."""
         self.ensure_one()
         self.material_line_ids.unlink()
-        van = self.tour_id.vehicle_id.dsd_van_location_id
+        van = self.tour_id.sudo().vehicle_id.dsd_van_location_id
         if not van:
             return True
         locations = van + van.child_internal_location_ids
-        quants = self.env['stock.quant'].search([
+        quants = self.env['stock.quant'].sudo().search([
             ('location_id', 'in', locations.ids),
             ('quantity', '>', 0),
         ])
@@ -142,7 +142,7 @@ class DsdCheckRecord(models.Model):
                     tour.dsd_state))
             tour.dsd_state = 'checked_out'
             if tour.dsd_odometer_start:
-                self.env['fleet.vehicle.odometer'].create({
+                self.env['fleet.vehicle.odometer'].sudo().create({
                     'vehicle_id': tour.vehicle_id.id,
                     'value': tour.dsd_odometer_start,
                     'date': fields.Date.context_today(self),
@@ -155,15 +155,18 @@ class DsdCheckRecord(models.Model):
                     tour.dsd_state))
             tour.dsd_state = 'checked_in'
             if tour.dsd_odometer_end:
-                self.env['fleet.vehicle.odometer'].create({
+                self.env['fleet.vehicle.odometer'].sudo().create({
                     'vehicle_id': tour.vehicle_id.id,
                     'value': tour.dsd_odometer_end,
                     'date': fields.Date.context_today(self),
                 })
-            unload = tour._create_unload_picking()
+            # sudo: the unload returning goods to the warehouse is a system
+            # posting; drivers hold no stock.picking create rights
+            unload = tour.sudo()._create_unload_picking()
             if unload:
                 unload.action_confirm()
-                unload.move_ids.write({'quantity': unload.move_ids.product_uom_qty})
+                for move in unload.move_ids:
+                    move.quantity = move.product_uom_qty
                 unload.with_context(skip_cancel_backorder=True).button_validate()
                 tour._log_dsd_status(self.env._(
                     'Checked in; van returned to warehouse (%s).', unload.name))

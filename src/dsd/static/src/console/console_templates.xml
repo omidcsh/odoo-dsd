@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="dsd.console.app">
+        <div class="dsd-console">
+            <header class="dsd-header">
+                <t t-if="props.app.state.screen === 'stop'">
+                    <button class="dsd-back" t-on-click="() => props.app.back()">‹</button>
+                </t>
+                <span class="dsd-title">DSD Console</span>
+                <t t-if="props.app.state.data">
+                    <span class="dsd-driver" t-esc="props.app.state.data.driver.name"/>
+                </t>
+            </header>
+            <div t-if="props.app.state.message" class="dsd-message"
+                 t-esc="props.app.state.message"/>
+            <div t-if="props.app.state.loading" class="dsd-loading">…</div>
+            <t t-if="props.app.state.screen === 'today' and props.app.state.data">
+                <TodayScreen data="props.app.state.data" app="props.app"/>
+            </t>
+            <t t-if="props.app.state.screen === 'stop' and props.app.state.stop">
+                <StopScreen stop="props.app.state.stop" app="props.app"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="dsd.console.today">
+        <section class="dsd-section">
+            <h2>Tours</h2>
+            <div t-if="!data.tours.length" class="dsd-empty">No tours today</div>
+            <div t-for="tour of data.tours" key="tour.id" class="dsd-card">
+                <div class="dsd-card-title" t-esc="tour.name"/>
+                <div class="dsd-card-sub">
+                    <span class="dsd-badge" t-esc="tour.state"/>
+                    <span t-esc="tour.route"/>
+                </div>
+                <ul class="dsd-vanstock">
+                    <li t-for="item of tour.van_stock" key="item.product">
+                        <t t-esc="item.product"/> — <t t-esc="item.qty"/> <t t-esc="item.uom"/>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <section class="dsd-section">
+            <h2>Visit Lists</h2>
+            <div t-if="!data.visit_lists.length" class="dsd-empty">No lists today</div>
+            <t t-for="list of data.visit_lists" key="list.id">
+                <div class="dsd-card">
+                    <div class="dsd-card-title" t-esc="list.name"/>
+                    <div class="dsd-card-sub" t-esc="list.route"/>
+                </div>
+                <t t-for="stop of list.stops" key="stop.id">
+                    <button class="dsd-stoprow" t-on-click="() => openStop(stop.id)">
+                        <span class="dsd-stopname" t-esc="stop.partner"/>
+                        <span class="dsd-stopmeta">
+                            <span class="dsd-badge" t-esc="stop.status"/>
+                            <t t-if="stop.reason" t-esc="stop.reason"/>
+                        </span>
+                    </button>
+                </t>
+            </t>
+        </section>
+    </t>
+
+    <t t-name="dsd.console.stop">
+        <div class="dsd-stopscreen">
+            <h2 t-esc="stop.partner"/>
+            <div class="dsd-card-sub">
+                <t t-esc="stop.address"/><br/>
+                <t t-if="stop.phone">☎ <t t-esc="stop.phone"/><br/></t>
+                <t t-if="stop.receiving_hours">⏰ <t t-esc="stop.receiving_hours"/><br/></t>
+                <a t-att-href="stop.maps_url" target="_blank">Map</a>
+            </div>
+            <t t-if="stop.driver_notes">
+                <div class="dsd-notes" t-esc="stop.driver_notes"/>
+            </t>
+            <div class="dsd-actions">
+                <button t-on-click="() => arrive()">Arrive</button>
+                <button t-on-click="() => depart()">Depart</button>
+                <button t-on-click="() => setStatus('sp')">Done</button>
+                <button t-on-click="() => setStatus('up')">Not visited</button>
+            </div>
+
+            <t t-if="stop.delivery">
+                <h3>Delivery <span t-esc="stop.delivery.name"/></h3>
+                <div t-for="line of stop.delivery.lines" key="line.move_id" class="dsd-qtyrow">
+                    <span t-esc="line.product"/> (<t t-esc="line.planned"/> <t t-esc="line.uom"/>)
+                    <input type="number" inputmode="decimal" step="any"
+                           t-att-value="line.planned"
+                           t-on-input="(ev) => state.quantities['q' + line.move_id] = ev.target.value"/>
+                </div>
+                <button class="dsd-primary" t-on-click="confirmDelivery">Confirm Delivery</button>
+            </t>
+
+            <h3>Van Sale</h3>
+            <div t-for="(line, idx) of state.saleLines" key="idx" class="dsd-qtyrow">
+                <select t-model="line.product_id">
+                    <option value="">Product…</option>
+                    <option t-foreach="stop.saleable_products || []" t-as="p"
+                            t-key="p.id" t-att-value="p.id" t-esc="p.name"/>
+                </select>
+                <input type="number" inputmode="decimal" step="any" t-model="line.qty"/>
+                <input type="number" inputmode="decimal" step="any" t-model="line.discount"
+                       placeholder="%"/>
+            </div>
+            <button t-on-click="addSaleLine">+ line</button>
+            <button class="dsd-primary" t-on-click="submitVanSale">Create Van Sale</button>
+
+            <h3>Collection</h3>
+            <t t-if="stop.collection_type === 'on_delivery'">
+                <div class="dsd-qtyrow">
+                    <select t-model="state.collectionJournal">
+                        <option value="">Method…</option>
+                        <option t-foreach="stop.accepted_journals" t-as="j"
+                                t-key="j.id" t-att-value="j.id" t-esc="j.name"/>
+                    </select>
+                    <input type="number" inputmode="decimal" step="any"
+                           t-model="state.collectionAmount"/>
+                    <select t-model="state.collectionInvoice">
+                        <option value="">No invoice link</option>
+                        <option t-foreach="stop.open_invoices" t-as="inv"
+                                t-key="inv.id" t-att-value="inv.id"
+                                t-esc="inv.name + ' ' + inv.residual"/>
+                    </select>
+                </div>
+                <button class="dsd-primary" t-on-click="submitCollection">Collect</button>
+            </t>
+            <div t-else="" class="dsd-empty">No collection for this customer</div>
+
+            <h3>Note</h3>
+            <textarea t-model="state.note" rows="2"/>
+            <button t-on-click="saveNote">Save Note</button>
+        </div>
+    </t>
+
+</templates>

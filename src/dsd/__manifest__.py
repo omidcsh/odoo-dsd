@@ -31,6 +31,7 @@ See docs/dsd-implementation-plan.md (v2) for the full specification.
         'security/ir.access.csv',
         'data/ir_sequence_data.xml',
         'data/ir_cron_data.xml',
+        'data/ir_cron_statistics.xml',
         'data/dsd_master_data.xml',
         'views/res_config_settings_views.xml',
         'views/dsd_route_views.xml',
@@ -42,10 +43,20 @@ See docs/dsd-implementation-plan.md (v2) for the full specification.
         'views/dsd_visit_list_generate_views.xml',
         'views/stock_picking_batch_views.xml',
         'views/dsd_execution_views.xml',
+        'views/dsd_console_views.xml',
+        'views/dsd_deal_views.xml',
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
         'views/dsd_menus.xml',
     ],
+    'assets': {
+        'dsd.console_assets': [
+            'dsd/static/src/console/console_app.js',
+            'dsd/static/src/console/boot.js',
+            'dsd/static/src/console/console_templates.xml',
+            'dsd/static/src/console/console.scss',
+        ],
+    },
     'demo': [
         'demo/dsd_demo.xml',
     ],

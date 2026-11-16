@@ -99,6 +99,21 @@ class DsdVisitList(models.Model):
                     ('kind', '=', kind),
                     ('visit_list_id', '=', False),
                 ]).unlink()
+                taken = Appointment.search([
+                    ('partner_id', '=', line.partner_id.id),
+                    ('date', '=', visit_list.execution_date),
+                    ('kind', '=', kind),
+                ], limit=1)
+                if taken and taken.visit_list_id != visit_list:
+                    raise UserError(_(
+                        '%(partner)s already has a %(kind)s appointment on '
+                        '%(date)s through visit list %(list)s. Remove the '
+                        'duplicate stop or cancel that list first.',
+                        partner=line.partner_id.display_name,
+                        kind=kind,
+                        date=visit_list.execution_date,
+                        list=taken.visit_list_id.display_name,
+                    ))
                 Appointment.create({
                     'partner_id': line.partner_id.id,
                     'date': visit_list.execution_date,

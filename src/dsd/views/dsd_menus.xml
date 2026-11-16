@@ -132,4 +132,15 @@
               action="action_dsd_reason"
               groups="dsd.group_dsd_dispatcher"
               sequence="70"/>
+
+    <menuitem id="menu_dsd_assortment"
+              parent="menu_dsd_config"
+              action="action_dsd_assortment"
+              sequence="80"/>
+
+    <menuitem id="menu_dsd_deal_condition"
+              parent="menu_dsd_config"
+              action="action_dsd_deal_condition"
+              groups="dsd.group_dsd_manager"
+              sequence="85"/>
 </odoo>

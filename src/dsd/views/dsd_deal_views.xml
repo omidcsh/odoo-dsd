@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Assortment rules -->
+    <record id="view_dsd_assortment_list" model="ir.ui.view">
+        <field name="name">dsd.assortment.list</field>
+        <field name="model">dsd.assortment</field>
+        <field name="arch" type="xml">
+            <list string="Assortment Rules">
+                <field name="rule_type" widget="badge"
+                       decoration-danger="rule_type == 'deny'"
+                       decoration-success="rule_type == 'allow'"/>
+                <field name="name"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_assortment_form" model="ir.ui.view">
+        <field name="name">dsd.assortment.form</field>
+        <field name="model">dsd.assortment</field>
+        <field name="arch" type="xml">
+            <form string="Assortment Rule">
+                <sheet>
+                    <group>
+                        <field name="rule_type" widget="radio"/>
+                        <field name="partner_group_id"/>
+                        <field name="product_category_id"/>
+                        <field name="name" invisible="1"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_assortment" model="ir.actions.act_window">
+        <field name="name">Assortment Rules</field>
+        <field name="res_model">dsd.assortment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Deal conditions -->
+    <record id="view_dsd_deal_condition_list" model="ir.ui.view">
+        <field name="name">dsd.deal.condition.list</field>
+        <field name="model">dsd.deal.condition</field>
+        <field name="arch" type="xml">
+            <list string="Deal Conditions" decoration-muted="state == 'expired'">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="result_type"/>
+                <field name="date_start"/>
+                <field name="date_end" optional="hide"/>
+                <field name="obligatory"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dsd_deal_condition_form" model="ir.ui.view">
+        <field name="name">dsd.deal.condition.form</field>
+        <field name="model">dsd.deal.condition</field>
+        <field name="arch" type="xml">
+            <form string="Deal Condition">
+                <header>
+                    <button name="action_set_active" type="object" string="Activate"
+                            class="btn-primary" invisible="state != 'draft'"
+                            groups="dsd.group_dsd_manager"/>
+                    <button name="action_expire" type="object" string="Expire"
+                            invisible="state != 'active'"
+                            groups="dsd.group_dsd_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Deal">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="sequence" groups="base.group_no_one"/>
+                            <field name="obligatory"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Validity">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Result">
+                            <field name="result_type" widget="radio"/>
+                            <field name="free_product_id" invisible="result_type != 'free_goods'"/>
+                            <field name="free_qty" invisible="result_type != 'free_goods'"/>
+                            <field name="discount_percent" invisible="result_type != 'discount_percent'"/>
+                        </group>
+                        <group string="Customers">
+                            <field name="partner_ids" widget="many2many_tags"/>
+                            <field name="partner_group_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Conditions (cart must contain)">
+                        <field name="line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="product_id"/>
+                                <field name="min_qty"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_dsd_deal_condition" model="ir.actions.act_window">
+        <field name="name">Deal Conditions</field>
+        <field name="res_model">dsd.deal.condition</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

@@ -35,4 +35,11 @@
         <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
+    <record id="seq_dsd_deal_condition" model="ir.sequence">
+        <field name="name">DSD Deal Condition</field>
+        <field name="code">dsd.deal.condition</field>
+        <field name="prefix">DL/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
 </odoo>

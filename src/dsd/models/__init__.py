@@ -15,6 +15,10 @@ from . import dsd_visit_appointment
 from . import dsd_tour_materials
 from . import dsd_loading_confirmation
 from . import dsd_check_record
+from . import dsd_assortment
+from . import dsd_deal_condition
+from . import dsd_console
+from . import dsd_customer_product_stat
 from . import sale_order
 from . import stock_picking_batch
 from . import stock_picking
