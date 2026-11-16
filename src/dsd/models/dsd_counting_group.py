@@ -24,6 +24,7 @@ class DsdCountingGroup(models.Model):
         'The counting group code must be unique.',
     )
 
+    @api.depends('product_ids')
     def _compute_product_count(self):
         groups = self.with_context(active_test=False)
         for group, noContext in zip(self, groups):

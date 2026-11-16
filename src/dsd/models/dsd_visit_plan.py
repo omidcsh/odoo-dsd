@@ -106,14 +106,16 @@ class DsdVisitPlan(models.Model):
         'The visit interval must be at least one week.',
     )
 
+    @api.depends('line_ids')
     def _compute_line_count(self):
         for plan in self:
             plan.line_count = len(plan.line_ids)
 
+    @api.depends('planned_list_ids')
     def _compute_planned_list_count(self):
-        counts = self.env['dsd.visit.list'].read_group(
-            [('plan_id', 'in', self.ids)], ['plan_id'], ['plan_id'])
-        by_plan = {row['plan_id'][0]: row['plan_id_count'] for row in counts}
+        counts = self.env['dsd.visit.list']._read_group(
+            [('plan_id', 'in', self.ids)], ['plan_id'], ['__count'])
+        by_plan = {plan.id: count for plan, count in counts}
         for plan in self:
             plan.planned_list_count = by_plan.get(plan.id, 0)
 

@@ -60,6 +60,7 @@ class DsdVisitList(models.Model):
         'A visit list already exists for this plan and date.',
     )
 
+    @api.depends('line_ids')
     def _compute_stop_count(self):
         for visit_list in self:
             visit_list.stop_count = len(visit_list.line_ids)

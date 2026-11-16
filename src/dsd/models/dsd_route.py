@@ -74,10 +74,12 @@ class DsdRoute(models.Model):
         'The route code must be unique per company.',
     )
 
+    @api.depends('partner_ids')
     def _compute_partner_count(self):
-        partners = self.env['res.partner'].with_context(active_test=False).read_group(
-            [('dsd_route_id', 'in', self.ids)], ['dsd_route_id'], ['dsd_route_id'])
-        counts = {row['dsd_route_id'][0]: row['dsd_route_id_count'] for row in partners}
+        partners = self.env['res.partner'].with_context(
+            active_test=False)._read_group(
+            [('dsd_route_id', 'in', self.ids)], ['dsd_route_id'], ['__count'])
+        counts = {partner.id: count for partner, count in partners}
         for route in self:
             route.partner_count = counts.get(route.id, 0)
 

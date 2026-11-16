@@ -391,6 +391,23 @@ assets grow. The old `dsd_core` is removed (§19.3).
     NULL → NotNullViolation). Scope every smoke search by
     `company_id in [env.company.id, False]`; smokes reset van/warehouse
     stock and create fresh driver/customer identities per run.
+40. `read_group`'s positional signature flipped in 17.0: it is now
+    `(domain, groupby, aggregates)` — pre-17 calls put the field list in
+    the aggregates slot and crash with "Aggregate method is mandatory".
+    Use `_read_group(domain, groupby, ['__count'])` (returns browsed
+    records + values tuples); the old `x_count` dict rows are gone.
+41. A non-stored compute **without `@api.depends`** is computed once per
+    env and its cache never invalidates (counts go stale in long-lived
+    envs). Declare `@api.depends('...')` on every compute — for
+    cross-model counts depend on the o2m inverse (e.g.
+    `@api.depends('partner_ids')`).
+42. Screen-level coverage gap: unit tests and flow smokes never render
+    backend screens, so UI-only computed fields (e.g. counts shown on
+    list/form views) execute for the first time in a real browser. The
+    per-phase gates are: unit suite + flow smoke + **all-fields read
+    sweep** (`search` every dsd model, `read` every field, savepoint per
+    field) — run it on any DB with representative data before calling a
+    phase done.
 
 
 ---

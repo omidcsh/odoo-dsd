@@ -129,6 +129,17 @@ class TestDsdRoute(TransactionCase):
         with self.assertRaises(IntegrityError), self.env.cr.savepoint():
             self.env['dsd.route'].create(self._route_vals(name='Other Route'))
 
+    def test_partner_count_computes(self):
+        """Regression: this computed field used the pre-17 read_group
+        signature and crashed the route form on read."""
+        route = self.env['dsd.route'].create(self._route_vals())
+        self.assertEqual(route.partner_count, 0)
+        self.env['res.partner'].create(
+            {'name': 'RC One', 'dsd_route_id': route.id})
+        self.env['res.partner'].create(
+            {'name': 'RC Two', 'dsd_route_id': route.id})
+        self.assertEqual(route.partner_count, 2)
+
 
 @tagged('post_install', '-at_install')
 class TestDsdConfigModels(TransactionCase):

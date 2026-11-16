@@ -209,6 +209,12 @@ class TestDsdListGeneration(DsdVisitFixture):
             visit_list.line_ids.mapped('partner_id'), self.customer + self.customer2)
         self.assertEqual(visit_list.state, 'draft')
 
+    def test_planned_list_count_reads(self):
+        """Regression: this computed field used the pre-17 read_group
+        signature and crashed the Visit Plans screen on read."""
+        self.plan._generate_list_for_date(self.day)
+        self.assertEqual(self.plan.planned_list_count, 1)
+
     def test_duplicate_generation_blocked(self):
         _status, first = self.plan._generate_list_for_date(self.day)
         status, detail = self.plan._generate_list_for_date(self.day)
