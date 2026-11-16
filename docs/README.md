@@ -1,13 +1,13 @@
 # Odoo DSD Project Docs
 
 Direct Store Delivery on Odoo 20 Community (Docker at `~/odoo-docker`, database `odoo`).
-**Status: PLAN v2 — Phases 0–1 delivered (2026-11-16)** — new module `src/dsd` installed
-on the dev DB with demo data, **45/45 tests green** on clean install. The old `dsd_core`
-prototype is fully removed (DB uninstall + code delete). Phase 1 delivered Visit Control:
-strategic visit plans (weekly/RRULE recurrence, holiday policies, non-appointments),
-operational visit lists with SAP visit statuses, the appointment time stream + nightly
-fill cron, the generation wizard (simulate/watermark), and sale-order route/date
-proposals. Next: Phase 2 (Tour preparation on `stock.picking.batch`).
+**Status: PLAN v2 — Phases 0–2 delivered (2026-11-16)** — module `src/dsd` installed on
+the dev DB with demo data, **62/62 tests green** on clean install, E2E 33/33 PASS.
+The old `dsd_core` prototype is fully removed. Phase 2 delivered tour preparation:
+tours on `stock.picking.batch` with SAP shipment validations, van load-out
+(aggregation picking + van-location isolation), speculative loads, and the dynamic
+tour-generation wizard with SAP capacity-limit order. Next: Phase 3 (tour execution:
+loading confirmation, check-out/in, reload, tour status automations).
 
 - [DSD Implementation Plan v2](dsd-implementation-plan.md) — capability ledger (SAP→Odoo,
   build/simplify/defer/exclude), data model specs, tour/visit/settlement engines, driver

@@ -1,16 +1,19 @@
 # DSD (Direct Store Delivery) on Odoo 20 — Comprehensive Implementation Plan (v2, from scratch)
 
-- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phase 0 + Phase 1 complete (2026-11-16).
+- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phases 0–2 complete (2026-11-16).
   Supersedes all prior plans and the `dsd_core` prototype.
-  Phase 0 done: module `src/dsd` installed on dev DB with demo; 22/22 tests green on
-  clean install; master data, security, settings and menus live.
-  Phase 1 done: visit plan types (role matrix), strategic visit plans (weekly/rrule
-  recurrence, non-working-day policies, non-appointments), operational visit lists
-  (statuses NP/SP/PP/UP/RS, postponing, confirm/start/done), appointment time stream
-  with nightly fill cron, generation wizard (dry-run, watermark, log), sale-order
-  route/date proposal. 45/45 tests green on clean install; end-to-end smoke verified
-  on the live DB (plan → generated list VL/2026/00001 → appointments → order proposal).
-  Pending AC: one manual browser pass over the new forms/menus (§4.4 headless caveat).
+  Phase 0 done: master data, security, settings, menus (62-test base).
+  Phase 1 done: visit control — plan types (role matrix), plans (weekly/rrule,
+  holiday policies, exceptions), lists with SAP visit statuses, appointment time
+  stream + cron, generation wizard (dry-run/watermark), sale-order proposals.
+  Phase 2 done: tours on stock.picking.batch (lifecycle, route/list links, co-driver,
+  trailer, seals), SAP shipment validations incl. licenses/locks, van load-out
+  aggregation picking with van-location isolation, speculative load wizard, dynamic
+  tour generation (capacity order weight→volume→stops→duration→LU, attempts,
+  include-new-customers), materials overview, tour kanban/list/search.
+  **62/62 tests green** on clean install; live smoke: candidate selection → tour
+  generated with clean log.
+  Pending AC: manual browser pass over tour screens (§4.4 headless caveat).
 - **Target stack:** Odoo 20.0 Community (docker: `~/odoo-docker`, Postgres 16), local git only
 - **Built from:** full analysis of `sap-dsd/` reference set —
   SAP Help *Direct Store Delivery* (EHP8 SP25), *SAP DSD Configuration* guide + SP01/SP02/SP03 deltas,
@@ -335,6 +338,21 @@ assets grow. The old `dsd_core` is removed (§19.3).
 25. Manifest order is load order: views referencing another file's action/xmlid must
     come after it.
 26. `res.users` groups field renamed `groups_id` → `group_ids`.
+27. `stock.picking.batch.driver_id` (stock_fleet) is a **res.partner** (fleet driver
+    contact for consignment docs) — the operational tour driver is our
+    `dsd_driver_id` (hr.employee); don't write employees into batch driver_id.
+28. `stock.move` lost `name` (don't set it at create); `product_uom` → `uom_id`
+    (`product_uom_qty` still exists); move `quantity` is written via `write()`
+    (no `_set_quantities`); `stock.picking` has no `warehouse_id` — use
+    `picking_type_id.warehouse_id`.
+29. Lazily created `stock.picking.type` needs an explicit `sequence_id` — picking
+    create fails with a cache KeyError on 'name' otherwise.
+30. Batch kanban is a `card_id` template reference — inherit by replacing the whole
+    kanban in a dedicated action view, not by xpath; view-validators reject
+    domains on non-stored computes unless a `search=` method is provided.
+31. Reservation search includes location DESCENDANTS — van locations must be
+    siblings of `warehouse.lot_stock_id` (under a "Van Fleet" view area), never
+    children, or van stock leaks into warehouse availability.
 
 
 ---
