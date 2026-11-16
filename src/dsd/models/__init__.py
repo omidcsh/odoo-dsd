@@ -13,12 +13,15 @@ from . import dsd_visit_plan_line
 from . import dsd_visit_list
 from . import dsd_visit_appointment
 from . import dsd_tour_materials
+from . import dsd_loading_confirmation
+from . import dsd_check_record
 from . import sale_order
 from . import stock_picking_batch
 from . import stock_picking
 from . import stock_warehouse
 from . import fleet_vehicle
 from . import fleet_vehicle_model
+from . import hr_expense
 from . import res_partner
 from . import product_template
 from . import res_company

@@ -77,7 +77,7 @@ class DsdTourGenerate(models.TransientModel):
                 move.product_uom_qty, move.product_id.uom_id)
             weight += move.product_id.weight * qty
             volume += move.product_id.volume * qty
-            if lu_uom and move.product_id.uom_id.category_id == lu_uom.category_id:
+            if lu_uom and move.product_id.uom_id._has_common_reference(lu_uom):
                 lu += move.product_id.uom_id._compute_quantity(qty, lu_uom)
         return weight, volume, lu
 

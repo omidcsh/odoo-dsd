@@ -41,6 +41,7 @@ See docs/dsd-implementation-plan.md (v2) for the full specification.
         'views/dsd_visit_views.xml',
         'views/dsd_visit_list_generate_views.xml',
         'views/stock_picking_batch_views.xml',
+        'views/dsd_execution_views.xml',
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
         'views/dsd_menus.xml',

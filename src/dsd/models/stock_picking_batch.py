@@ -49,6 +49,17 @@ class StockPickingBatch(models.Model):
     dsd_load_picking_id = fields.Many2one(
         'stock.picking', string='Van Load-Out', copy=False,
         help='Internal picking moving the loaded goods warehouse → van.')
+    dsd_unload_picking_id = fields.Many2one(
+        'stock.picking', string='Van Unload', copy=False,
+        help='Internal picking returning remaining van stock at check-in.')
+    dsd_reload_picking_ids = fields.Many2many(
+        'stock.picking', 'dsd_tour_reload_rel', 'batch_id', 'picking_id',
+        string='Reload Pickings', copy=False,
+        help='Mid-tour WH→Van / Van→WH stop-off pickings.')
+    dsd_check_ids = fields.One2many(
+        'dsd.check.record', 'tour_id', string='Check-Out / Check-In')
+    dsd_loading_confirmation_ids = fields.One2many(
+        'dsd.loading.confirmation', 'tour_id', string='Loading Confirmations')
     dsd_seal_numbers = fields.Char(
         string='Seal Numbers', copy=False,
         help='Recorded with the loading confirmation before departure.')
@@ -115,7 +126,7 @@ class StockPickingBatch(models.Model):
                     move.product_uom_qty, move.product_id.uom_id)
                 weight += move.product_id.weight * qty
                 volume += move.product_id.volume * qty
-                if lu_uom and move.product_id.uom_id.category_id == lu_uom.category_id:
+                if lu_uom and move.product_id.uom_id._has_common_reference(lu_uom):
                     lu += move.product_id.uom_id._compute_quantity(qty, lu_uom)
             tour.dsd_planned_weight = weight
             tour.dsd_planned_volume = volume
@@ -193,6 +204,73 @@ class StockPickingBatch(models.Model):
     def _log_dsd_status(self, message):
         self.ensure_one()
         self.message_post(body=message, body_is_html=False)
+
+    def write(self, vals):
+        for tour in self:
+            if 'dsd_state' in vals and vals['dsd_state'] != tour.dsd_state:
+                label = dict(self._fields['dsd_state']._description_selection(self.env))
+                tour.message_post(body=self.env._(
+                    'Tour status: %s → %s.',
+                    label.get(tour.dsd_state, tour.dsd_state or '-'),
+                    label.get(vals['dsd_state'], vals['dsd_state'])))
+        return super().write(vals)
+
+    def action_dsd_start(self):
+        for tour in self:
+            if tour.dsd_state != 'checked_out':
+                raise UserError(_('Only checked-out tours can depart.'))
+        self.write({'dsd_state': 'in_progress'})
+        for tour in self:
+            tour._log_dsd_status(_('Tour departed.'))
+        return True
+
+    def action_dsd_open_reload(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reload Van'),
+            'res_model': 'dsd.reload',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_tour_id': self.id},
+        }
+
+    def _create_unload_picking(self):
+        """Return remaining van stock to the warehouse (SAP final unloading
+        document): one internal picking covering the van sub-locations."""
+        self.ensure_one()
+        van = self.vehicle_id.dsd_van_location_id
+        if not van:
+            return False
+        warehouse = self.dsd_route_id.warehouse_id \
+            or self.picking_ids.picking_type_id.warehouse_id[:1]
+        if not warehouse:
+            return False
+        picking_type = warehouse._dsd_get_load_picking_type()
+        quants = self.env['stock.quant'].search([
+            ('location_id', 'child_of', van.id),
+            ('quantity', '>', 0),
+        ])
+        if not quants:
+            return False
+        unload = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': van.id,
+            'location_dest_id': warehouse.lot_stock_id.id,
+            'origin': f'{self.name} check-in unload',
+            'move_ids': [
+                (0, 0, {
+                    'product_id': quant.product_id.id,
+                    'product_uom_qty': quant.quantity,
+                    'uom_id': quant.product_id.uom_id.id,
+                    'location_id': quant.location_id.id,
+                    'location_dest_id': warehouse.lot_stock_id.id,
+                })
+                for quant in quants
+            ],
+        })
+        self.dsd_unload_picking_id = unload
+        return unload
 
     def action_dsd_confirm(self):
         for tour in self:

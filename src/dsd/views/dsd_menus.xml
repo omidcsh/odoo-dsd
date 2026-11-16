@@ -26,6 +26,18 @@
               groups="dsd.group_dsd_dispatcher"
               sequence="30"/>
 
+    <menuitem id="menu_dsd_lc"
+              parent="menu_dsd_operations"
+              action="action_dsd_lc"
+              groups="dsd.group_dsd_dispatcher"
+              sequence="35"/>
+
+    <menuitem id="menu_dsd_check"
+              parent="menu_dsd_operations"
+              action="action_dsd_check"
+              groups="dsd.group_dsd_dispatcher"
+              sequence="37"/>
+
     <menuitem id="menu_dsd_tour_generate"
               parent="menu_dsd_operations"
               action="action_dsd_tour_generate"
