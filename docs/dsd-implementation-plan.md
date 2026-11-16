@@ -1,19 +1,18 @@
 # DSD (Direct Store Delivery) on Odoo 20 — Comprehensive Implementation Plan (v2, from scratch)
 
-- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phases 0–2 complete (2026-11-16).
+- **Date:** 2026-11-16 · **Status:** IN DELIVERY — Phases 0–3 complete (2026-11-16).
   Supersedes all prior plans and the `dsd_core` prototype.
-  Phase 0 done: master data, security, settings, menus (62-test base).
-  Phase 1 done: visit control — plan types (role matrix), plans (weekly/rrule,
-  holiday policies, exceptions), lists with SAP visit statuses, appointment time
-  stream + cron, generation wizard (dry-run/watermark), sale-order proposals.
-  Phase 2 done: tours on stock.picking.batch (lifecycle, route/list links, co-driver,
-  trailer, seals), SAP shipment validations incl. licenses/locks, van load-out
-  aggregation picking with van-location isolation, speculative load wizard, dynamic
-  tour generation (capacity order weight→volume→stops→duration→LU, attempts,
-  include-new-customers), materials overview, tour kanban/list/search.
-  **62/62 tests green** on clean install; live smoke: candidate selection → tour
-  generated with clean log.
-  Pending AC: manual browser pass over tour screens (§4.4 headless caveat).
+  Phase 0 done: master data, security, settings, menus.
+  Phase 1 done: visit control — plans, lists, appointments, generation, order proposals.
+  Phase 2 done: tours on stock.picking.batch, validations, van load-out + isolation,
+  speculative loads, dynamic tour generation, materials overview.
+  Phase 3 done: loading confirmation (product/counting-group counting, reason-coded
+  differences, itemize, seal-and-validate), check-out/check-in custody counts
+  (goods + cash, supervisor countersign), reload wizard, final unload picking,
+  odometer records, state-timeline chatter. **71/71 tests green**; live smoke ran
+  the complete execution loop (SO → tour → load → LC → loaded → check-out → depart
+  → check-in → unload validated, van emptied).
+  Pending AC: manual browser pass over execution screens (§4.4 headless caveat).
 - **Target stack:** Odoo 20.0 Community (docker: `~/odoo-docker`, Postgres 16), local git only
 - **Built from:** full analysis of `sap-dsd/` reference set —
   SAP Help *Direct Store Delivery* (EHP8 SP25), *SAP DSD Configuration* guide + SP01/SP02/SP03 deltas,
@@ -353,6 +352,14 @@ assets grow. The old `dsd_core` is removed (§19.3).
 31. Reservation search includes location DESCENDANTS — van locations must be
     siblings of `warehouse.lot_stock_id` (under a "Van Fleet" view area), never
     children, or van stock leaks into warehouse availability.
+32. UoM categories are removed entirely — compatibility is
+    `uom._has_common_reference(other)` (parent-path based); `_compute_quantity`
+    always converts via absolute factors and never raises.
+33. Quant-based custody counts must read physical `quant.quantity` —
+    `available_quantity` excludes units reserved for the tour's own deliveries
+    and would wrongly report an empty van.
+34. `fleet.vehicle` has no `odometer_ids` o2m in 20 — create
+    `fleet.vehicle.odometer` records directly (vehicle_id, value, date).
 
 
 ---
