@@ -334,6 +334,7 @@ assets grow. The old `dsd_core` is removed (§19.3).
     the domain filters on (e.g. plan state) before selecting records.
 25. Manifest order is load order: views referencing another file's action/xmlid must
     come after it.
+26. `res.users` groups field renamed `groups_id` → `group_ids`.
 
 
 ---

@@ -82,9 +82,12 @@ class DsdVisitList(models.Model):
 
     def _sync_appointments(self):
         """Keep the customer time stream in line with this list: one
-        appointment per planned stop (partner, execution date, plan-type kind)."""
-        Appointment = self.env['dsd.visit.appointment']
-        for visit_list in self.filtered(lambda lst: lst.state != 'cancelled'):
+        appointment per planned stop (partner, execution date, plan-type kind).
+        Runs as sudo: the time stream is a system-maintained projection that
+        restricted users (drivers) may not write directly, and it reads
+        configuration (plan types) drivers cannot see."""
+        Appointment = self.env['dsd.visit.appointment'].sudo()
+        for visit_list in self.sudo().filtered(lambda lst: lst.state != 'cancelled'):
             kind = visit_list._appointment_kind()
             Appointment.search([('visit_list_id', '=', visit_list.id)]).unlink()
             if visit_list.inactive:
@@ -123,13 +126,17 @@ class DsdVisitList(models.Model):
 
     def write(self, vals):
         result = super().write(vals)
-        if {'line_ids', 'execution_date', 'inactive', 'plan_type_id', 'route_id',
+        if vals.get('state') == 'cancelled':
+            # cancelling releases the list's time-stream slots
+            self.env['dsd.visit.appointment'].sudo().search([
+                ('visit_list_id', 'in', self.ids)]).unlink()
+        elif {'line_ids', 'execution_date', 'inactive', 'plan_type_id', 'route_id',
                 'state', 'plan_id'} & vals.keys():
             self._sync_appointments()
         return result
 
     def unlink(self):
-        self.env['dsd.visit.appointment'].search([
+        self.env['dsd.visit.appointment'].sudo().search([
             ('visit_list_id', 'in', self.ids)]).unlink()
         return super().unlink()
 

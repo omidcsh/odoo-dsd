@@ -295,6 +295,16 @@ class TestDsdListGeneration(DsdVisitFixture):
         self.assertEqual(len(Appointment.search([
             ('visit_list_id', '=', visit_list.id)])), 2)
 
+    def test_cancel_releases_appointments(self):
+        _status, visit_list = self.plan._generate_list_for_date(self.day)
+        Appointment = self.env['dsd.visit.appointment']
+        self.assertEqual(len(Appointment.search([
+            ('visit_list_id', '=', visit_list.id)])), 2)
+        visit_list.action_cancel()
+        self.assertFalse(Appointment.search([
+            ('visit_list_id', '=', visit_list.id)]),
+            'cancelled list must release its time-stream slots')
+
     def test_confirm_requires_driver_and_stops(self):
         from odoo.exceptions import UserError
         status, visit_list = self.plan._generate_list_for_date(self.day)
