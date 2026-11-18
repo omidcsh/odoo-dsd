@@ -29,6 +29,7 @@ gets its own issue**, and nothing is implemented without a plan issue first.
 | D4 | payment_terms1..5 wire slots | deferred with other wire fields |
 | D5 | Pricing engine | **Odoo-native `product.pricelist`** on the Odoo side; SAP parity engine (`dsd_pricing`, Phase 6 of the package) dropped; device keeps its offline engine |
 | D6 | Sales-area trio | master catalogs + TVTA-style combo entity + relationship row (not free chars) |
+| D8 | Mobile (2026-11-18, user) | **New native Android/iOS app + clean Odoo JSON API; online-first.** The SAP wire-compatibility mission (pseudo-SAP gateway, MSE_* registry, dsd_compatibility module) is DROPPED — the SAP package is business-logic reference only. Sales scenario first, distribution second; backend/API equipped first so the app can build against it. Mobile features named so far: tour/visit/customer/product/config/customizing/pricing downloads; order + return uploads; visit data upload; **cancel & copy** on orders |
 | D7 | Tour birth (2026-11-18, user) | **On-demand tour from visit list.** The visit list is the day's planning unit; the tour is materialized at download time (release = download), 1:1 with a download lock. Unlock only by admin logical-delete of the tour, guarded: (a) no uploaded/linked documents on the tour, (b) the new tour gets a new id (never reuse), (c) archived tour kept with reason. List content is snapshotted into the tour at creation (later list changes don't propagate). SAP batch-generation machinery, parity message codes 300–316 and the NAST/IDoc chain are dropped; list ladder: `draft → downloaded → closed` |
 
 ## Data model & roadmap diagrams
@@ -69,9 +70,10 @@ flowchart LR
   sales area; pricelist flows from the primary SA (D5)
 - [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **8. Mobile wire gateway** — `dsd_compatibility`: the 3 endpoints,
-  `zcheck_user`, download emitters (wire fields materialize here),
-  upload ingest keyed on (guid, object, business key)
+- [ ] **8. Mobile API (D8)** — clean Odoo JSON API for the native app:
+  auth, day-package download (tour/visits/customers/products/configs/
+  customizing/prices), uploads: orders, returns, visit data, **cancel &
+  copy**; client-UUID idempotency. Sales scenario first, distribution after
 - [ ] **9. Reports & publish prep** — QWeb reports, README/icon, suite
   packaging, license pass
 

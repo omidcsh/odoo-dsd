@@ -34,7 +34,8 @@ erDiagram
     PSA ||..o{ RCUST["dsd.route.customer"] : "membership — planned"
     ROUTE ||..o{ PLAN["dsd.visit.plan"] : "planned"
     PLAN ||..o{ TOUR["tour on stock.picking.batch"] : "planned"
-    GW["dsd_compatibility gateway"] ||..|| AREA : "emits MSE_* registry — planned"
+    APP["native mobile app (planned)"] ..|| API["dsd API: JSON controllers (planned)"] : "online"
+    API ||..|| TOUR : "serves day package, uploads"
 ```
 
 ## 2. Build roadmap — one step per issue
@@ -56,6 +57,9 @@ flowchart LR
 
 ## Notes
 
+- Mobile decision (D8): a NEW native app (Android/iOS) served by a clean
+  Odoo JSON API — the SAP wire-compatibility gateway is dropped; the SAP
+  package is business-logic reference only. Online-first.
 - Pricing decision (D5): Odoo-native `product.pricelist` on the Odoo side;
   the SAP parity engine (`dsd_pricing`) is dropped — device keeps its own
   offline engine when the gateway step arrives.
