@@ -10,9 +10,11 @@
 A native Android/iOS app (built separately, against this API) must be able
 to: log in, download its day (tour, visits, customers, products, configs,
 customizing, prices), work the visits, and send back orders, returns, visit
-statuses — plus **cancel & copy** on orders. Online-first: the app may cache
-the day package, but every mutation is a direct online call; the server is
-the single source of truth (no offline sync machinery).
+statuses — plus **cancel & copy** on orders. **Everything online (D8):**
+every read AND write is a live server call — including pricing (the app asks
+Odoo and displays the returned price; it never computes). The server is the
+single source of truth; no offline mode is designed in v1 (if the app caches
+for UX, that is its own concern and never authoritative).
 
 - Lives in `dsd_core/controllers/` (split to its own module at publish time
   if the suite needs it). `depends` unchanged by this step (controllers are
@@ -28,6 +30,7 @@ the single source of truth (no offline sync machinery).
 | Serialization | JSON request params / `request.make_response` | ✓ |
 | Verb style | Odoo routes accept any method; v1 convention: **POST + JSON body for everything** (actions are RPC-flavored) | ✓ document clearly for the app team |
 | Rate limiting | none native | skip in v1 (single-tenant app traffic) |
+| Config store | `ir.config_parameter` is global-only (no SA scope) | custom `dsd.customizing` with scope resolution — per-SA behavior is a DSD requirement (MDSD `CustomizingSalesAreaBO`) |
 
 ## 1. Endpoints (v1 — sales scenario)
 
@@ -39,8 +42,37 @@ the single source of truth (no offline sync machinery).
 | `POST /dsd/api/v1/tour/download` | `{date}` | **D7 materialization** (guarded, once per list) + full day package in one payload: `tour`, `visits[]` (id, sequence, partner snapshot, SA, state, planned times), `customers[]` (partner data + SA rows + blocks + partner functions + geo + pricelist id), `products[]` (code, name, uom, category), `config` (feature-flag key-values, v1 minimal) |
 | `POST /dsd/api/v1/tour/get` | `{date}` | re-fetch the current package (re-install/refresh) — serves the EXISTING tour, never re-materializes (D7 lock) |
 | `POST /dsd/api/v1/prices` | `{partner_id, items: [{product_id, qty}]}` | **server-computed prices** (D5: the customer's SA pricelist, Odoo-native engine). The app never computes prices. |
+| `POST /dsd/api/v1/config` | `{}` | resolved customizing for the caller (see 1.2) — also embedded in the day package; standalone endpoint for refresh |
 
-### 1.2 Uploads (mutations — all online)
+### 1.2 Config/customizing model — `dsd.customizing` (new in this step)
+
+Behavior of the app must be changeable via config, not code. Semantics are
+mined from the old app source (`/Users/kalleh/Source/Solico/MDSD`):
+global keys (`CustomizingConstants.Key`, ~75) and per-sales-area flags
+(`CustomizingSalesAreaBO` — the 68-field set, incl. doc-type permissions per
+SA). Odoo model:
+
+| Field | Type | Notes |
+|---|---|---|
+| `key` | Char, required, indexed | stable code, e.g. `SA_ORD_TYPE`, `MANUAL_DISCOUNTS` |
+| `value` | Char/Text | the `Behaviour` equivalent (string; app parses) |
+| `scope` | sel global/country/sales_area | resolution order on read: **sales_area → country → global → built-in default** |
+| `country_id` | m2o res.country | when scope=country |
+| `sales_area_id` | m2o dsd.sales.area | when scope=sales_area |
+| `description` | Char | shown in the admin UI |
+
+- SQL unique: `(key, scope, country_id, sales_area_id)` (NULLs distinct)
+- Admin UI: DSD → Configuration → Customizing (list/form + "effective value
+  preview" per SA). Seed v1 with the **sales-scenario-relevant subset only**:
+  per-SA doc permissions (`ORDER_ENABLED`, `RETURN_ENABLED`), pricing-date
+  policy, `MANUAL_DISCOUNTS`, `ITEMS_PROPOSAL`, reason-mandatory flags for
+  skip/cancel, `CANCEL_ALLOWED`, `COPY_ENABLED`. The rest of the ~75-key
+  catalog joins step by step as features need it — never invent keys without
+  an MDSD counterpart.
+- The `config` payload of the day package = resolved key/value map for the
+  driver's context (their SAs + company country).
+
+### 1.3 Uploads (mutations — all online)
 
 | Endpoint | In | Effect |
 |---|---|---|
@@ -49,7 +81,7 @@ the single source of truth (no offline sync machinery).
 | `POST /dsd/api/v1/order/cancel` | `{client_uuid, reason}` | `action_cancel` with guards (not delivered/invoiced); reason logged |
 | `POST /dsd/api/v1/order/copy` | `{source_client_uuid, new_client_uuid}` | copies lines to a NEW draft order on the same visit |
 
-### 1.3 Cross-cutting contract
+### 1.4 Cross-cutting contract
 
 - **Idempotency:** `dsd_client_uuid` Char (indexed, unique) on `sale.order`;
   replaying an order returns the original (same id), never duplicates.
@@ -80,6 +112,8 @@ the single source of truth (no offline sync machinery).
 7. `cancel`: draft OK; blocked with delivery → `order_not_cancelable`
 8. `copy`: new draft on same visit, same lines
 9. cross-driver isolation: driver B cannot fetch driver A's tour
+10. customizing resolution: SA override beats country beats global; day
+    package embeds the resolved map
 
 ## 4. Definition of done
 
