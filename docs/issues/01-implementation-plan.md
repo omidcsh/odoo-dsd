@@ -29,6 +29,7 @@ gets its own issue**, and nothing is implemented without a plan issue first.
 | D4 | payment_terms1..5 wire slots | deferred with other wire fields |
 | D5 | Pricing engine | **Odoo-native `product.pricelist`** on the Odoo side; SAP parity engine (`dsd_pricing`, Phase 6 of the package) dropped; device keeps its offline engine |
 | D6 | Sales-area trio | master catalogs + TVTA-style combo entity + relationship row (not free chars) |
+| D7 | Tour birth (2026-11-18, user) | **On-demand tour from visit list.** The visit list is the day's planning unit; the tour is materialized at download time (release = download), 1:1 with a download lock. Unlock only by admin logical-delete of the tour, guarded: (a) no uploaded/linked documents on the tour, (b) the new tour gets a new id (never reuse), (c) archived tour kept with reason. List content is snapshotted into the tour at creation (later list changes don't propagate). SAP batch-generation machinery, parity message codes 300–316 and the NAST/IDoc chain are dropped; list ladder: `draft → downloaded → closed` |
 
 ## Data model & roadmap diagrams
 
@@ -61,9 +62,9 @@ flowchart LR
 - [ ] **4. Customer 360 — DSD panel** — routes read-through + geo/city
   master fields on the partner form (#5); hierarchy/CPD/wire extras deferred
   to the gateway step
-- [ ] **5. Tours, visit lists & van stock** — tours on
-  `stock.picking.batch`, visit lists + generation machinery (M01 §3.5–3.6),
-  van as stock location, check-out/in day cycle
+- [ ] **5. Presales day (D7)** — light visit list → on-demand tour
+  materialization (1:1, snapshot, admin unlock) → visits → presale orders
+  (`sale.order` per visit); first new dep: `sale`
 - [ ] **6. Orders & native pricing** — `sale.order` capture stamped with
   sales area; pricelist flows from the primary SA (D5)
 - [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
