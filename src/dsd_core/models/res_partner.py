@@ -30,6 +30,7 @@ class ResPartner(models.Model):
     @api.depends(
         'sales_area_ids',
         'sales_area_ids.active',
+        'sales_area_ids.is_primary',
         'sales_area_ids.sale_block', 'sales_area_ids.delivery_block',
         'sales_area_ids.billing_block',
         'sales_area_ids.sales_area_id.sales_org_id.code',
@@ -37,11 +38,14 @@ class ResPartner(models.Model):
         'sales_area_ids.sales_area_id.division_id.code',
     )
     def _compute_dsd_primary_sales_area(self):
-        """Primary = first active sales-area row (lowest id). Read-through of
-        its trio codes and block flags for list filtering."""
+        """Follows the row flagged is_primary (one active primary per
+        partner, enforced on dsd.partner.sales.area). Display/filtering
+        AIDS ONLY — blocks always live per SA row and are never enforced
+        customer-wide (review 1.5)."""
         for partner in self:
-            rows = partner.sales_area_ids.filtered(lambda r: r.active)
-            primary = rows.sorted(key=lambda r: r.id)[:1]
+            rows = partner.sales_area_ids.filtered(
+                lambda r: r.active and r.is_primary)
+            primary = rows[:1]
             if primary:
                 combo = primary.sales_area_id
                 partner.dsd_sales_org = combo.sales_org_id.code or False

@@ -25,6 +25,10 @@ class DsdSalesArea(models.Model):
     division_id = fields.Many2one(
         'dsd.division', string='Division', required=True,
         index=True, ondelete='restrict')
+    # multi-company anchor (review P0-9): optional now, avoids a breaking
+    # change when multi-company rules land
+    company_id = fields.Many2one(
+        'res.company', default=lambda self: self.env.company)
     active = fields.Boolean(default=True)
 
     _combo_uniq = models.Constraint(

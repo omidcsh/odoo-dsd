@@ -10,6 +10,7 @@
                     <field name="sales_area_ids">
                         <list>
                             <field name="sales_area_id"/>
+                            <field name="is_primary" optional="show"/>
                             <field name="plant_id" optional="show"/>
                             <field name="pricelist_id" optional="show"/>
                             <field name="sale_block" optional="hide"/>
@@ -21,6 +22,7 @@
                             <group>
                                 <group>
                                     <field name="sales_area_id"/>
+                                    <field name="is_primary"/>
                                     <field name="plant_id"/>
                                     <field name="pricelist_id"/>
                                 </group>

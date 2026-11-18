@@ -7,6 +7,7 @@
             <list>
                 <field name="partner_id"/>
                 <field name="sales_area_id"/>
+                <field name="is_primary" optional="show"/>
                 <field name="plant_id" optional="show"/>
                 <field name="pricelist_id" optional="show"/>
                 <field name="sale_block" optional="hide"/>
@@ -27,6 +28,7 @@
                         <group>
                             <field name="partner_id"/>
                             <field name="sales_area_id"/>
+                            <field name="is_primary"/>
                             <field name="plant_id"/>
                             <field name="pricelist_id"/>
                         </group>

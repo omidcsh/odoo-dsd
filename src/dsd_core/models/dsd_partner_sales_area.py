@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class DsdPartnerSalesArea(models.Model):
@@ -20,6 +21,11 @@ class DsdPartnerSalesArea(models.Model):
     sales_area_id = fields.Many2one(
         'dsd.sales.area', string='Sales Area', required=True, index=True,
         ondelete='restrict')
+    # exactly one ACTIVE primary per partner (python constraint below) — the
+    # deterministic "main" SA (review P0); replaces first-row-by-id
+    is_primary = fields.Boolean(string='Primary')
+    company_id = fields.Many2one(
+        'res.company', default=lambda self: self.env.company)
     active = fields.Boolean(default=True)
 
     # -- document blocks (wire SALE_BLOCK2 / DELV_BLOCK2 / BILL_BLOCK2) ------
@@ -37,13 +43,35 @@ class DsdPartnerSalesArea(models.Model):
     bill_to_id = fields.Many2one('res.partner', string='Bill To')
 
     # -- Odoo-native reuse (wire PLANT / PRC_LIST) ---------------------------
+    # plant: DEPLOYMENT MAPPING ASSUMPTION (SAP plant ≈ Odoo warehouse for
+    # this deployment) — documented, revisit at the van-stock step (D9).
     plant_id = fields.Many2one('stock.warehouse', string='Plant')
+    # D5+D9: read at ORDER/PRICE time from the relevant SA row; never synced
+    # onto res.partner.property_product_pricelist (multi-SA partners hold
+    # several pricelists; the partner property carries only one).
     pricelist_id = fields.Many2one('product.pricelist', string='Pricelist')
 
     _partner_area_uniq = models.Constraint(
         'unique (partner_id, sales_area_id)',
         'This customer already has this sales area!',
     )
+
+    @api.constrains('partner_id', 'is_primary', 'active')
+    def _check_single_primary(self):
+        for rec in self:
+            if rec.is_primary and rec.active:
+                others = self.search([
+                    ('partner_id', '=', rec.partner_id.id),
+                    ('is_primary', '=', True),
+                    ('active', '=', True),
+                    ('id', '!=', rec.id),
+                ])
+                if others:
+                    raise ValidationError(_(
+                        'Customer %s already has a primary sales area (%s).',
+                        rec.partner_id.display_name,
+                        others[:1].sales_area_id.display_name,
+                    ))
 
     @api.depends('partner_id.display_name', 'sales_area_id.display_name')
     def _compute_display_name(self):
@@ -60,28 +88,13 @@ class DsdPartnerSalesArea(models.Model):
             if not self[fn]:
                 self[fn] = self.partner_id
 
-    # -- pricelist sync -------------------------------------------------------
-    def _sync_partner_pricelist(self):
-        """Keep the partner's Odoo pricelist aligned with the primary
-        (first active) sales area — the "use Odoo pricing" decision (plan
-        D5): Odoo-native orders must price from the customer's primary SA.
-        Never clears the property, only sets it."""
-        for rec in self:
-            if not rec.pricelist_id or not rec.active:
-                continue
-            rows = rec.partner_id.sales_area_ids.filtered(lambda r: r.active)
-            primary = rows.sorted(key=lambda r: r.id)[:1]
-            if primary == rec and rec.pricelist_id != rec.partner_id.property_product_pricelist:
-                rec.partner_id.property_product_pricelist = rec.pricelist_id
-
+    # PF defaults must ALSO cover API/code paths, not only the UI onchange
+    # (review 1.4)
     @api.model_create_multi
     def create(self, vals_list):
-        records = super().create(vals_list)
-        records._sync_partner_pricelist()
-        return records
-
-    def write(self, vals):
-        res = super().write(vals)
-        if {'pricelist_id', 'active'} & set(vals):
-            self._sync_partner_pricelist()
-        return res
+        for vals in vals_list:
+            if vals.get('partner_id'):
+                for fn in ('payer_id', 'sold_to_id', 'ship_to_id', 'bill_to_id'):
+                    if not vals.get(fn):
+                        vals[fn] = vals['partner_id']
+        return super().create(vals_list)
