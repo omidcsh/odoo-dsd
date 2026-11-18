@@ -66,14 +66,15 @@ flowchart LR
 - [ ] **4. Customer 360 — DSD panel** — routes read-through + geo/city
   master fields on the partner form (#5); geo codes interim — **Geographic
   Master Data (P1)** replaces them with m2o hierarchy when built
-- [ ] **5. Presales day (D7)** — light visit list → on-demand tour
+- [ ] **5. Presales day (D7/D9)** — light visit list → on-demand tour
   materialization (1:1, snapshot, admin unlock) → visits → presale orders
-  (`sale.order` per visit); first new dep: `sale`
+  (`sale.order` per visit); deps +sale/fleet/mail (#6)
 - [ ] **6. Orders & native pricing** — `sale.order` capture stamped with
   sales area; pricelist flows from the primary SA (D5)
 - [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **8. Mobile API (D8/D9)** — clean JSON-over-HTTP API for the native app:
+- [ ] **8. Mobile API (D8/D9)** — JSON-over-HTTP API v1 for the native app
+  (#7):
   auth, day-package download (tour/visits/customers/products/configs/
   customizing/prices), uploads: orders, returns, visit data, **cancel &
   copy**; client-UUID idempotency. Sales scenario first, distribution after
