@@ -42,14 +42,15 @@ erDiagram
 ```mermaid
 flowchart LR
     S1["✅ 1. Sales Area<br/>dsd_core"]
-    S2["2. Route &<br/>visit plans"]
-    S3["3. Customer 360<br/>extras"]
-    S4["4. Tours &<br/>van stock"]
-    S5["5. Orders &<br/>native pricing"]
-    S6["6. Settlement &<br/>payments"]
-    S7["7. Mobile wire<br/>gateway"]
-    S8["8. Reports &<br/>publish prep"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+    S2["2. Route master<br/>& membership"]
+    S3["3. Visit plans<br/>(strategic)"]
+    S4["4. Customer 360<br/>extras"]
+    S5["5. Tours, visit lists<br/>& van stock"]
+    S6["6. Orders &<br/>native pricing"]
+    S7["7. Settlement &<br/>payments"]
+    S8["8. Mobile wire<br/>gateway"]
+    S9["9. Reports &<br/>publish prep"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
     style S1 fill:#d4edda,stroke:#28a745
 ```
 
