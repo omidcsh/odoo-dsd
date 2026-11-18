@@ -1,6 +1,8 @@
 # [PLAN] DSD (Direct Store Delivery) on Odoo — Implementation Plan
 
-**Goal:** bring SAP-style DSD to Odoo step by step, as a publishable module
+**Goal:** build an **SAP-inspired DSD platform** on Odoo (business-process
+compatibility with SAP DSD; technical/wire compatibility dropped per D8),
+step by step, as a publishable module
 suite. Source material: the SAP-DSD-to-ODOO engineering package (Solico) —
 adapted by the decisions below. This issue is the master plan; **each step
 gets its own issue**, and nothing is implemented without a plan issue first.
@@ -29,6 +31,7 @@ gets its own issue**, and nothing is implemented without a plan issue first.
 | D4 | payment_terms1..5 wire slots | deferred with other wire fields |
 | D5 | Pricing engine | **Odoo-native `product.pricelist`** on the Odoo side; SAP parity engine (`dsd_pricing`, Phase 6 of the package) dropped; device keeps its offline engine |
 | D6 | Sales-area trio | master catalogs + TVTA-style combo entity + relationship row (not free chars) |
+| D9 | Architecture review adoption (2026-11-18, external review — verdicts in `docs/reviews/2026-11-18-architecture-review.md`) | Pricing resolves from the **visit/order's SA** at creation time (partner-property sync dropped); vehicle optional in presales (+ `fleet` dep); visit lifecycle independent of orders; visit list has one explicit `source_type`; 1-live-tour-per-list DB-enforced (partial unique index); mobile auth = session-only v1 + new `group_dsd_driver` role; day package bounded + paginated `/catalog`; idempotency on every verb (download = find-or-materialize); returns = flagged orders with POSITIVE qty (fulfilment deferred); prices endpoint takes visit/SA context; `dsd.customizing` gets value_type + per-scope partial uniques + config_version; API = plain JSON over HTTP with `{ok,…}` envelope; `mail` dep adopted for audit; `company_id` anchors on SA models |
 | D8 | Mobile (2026-11-18, user; refined same day) | **New native Android/iOS app + clean Odoo JSON API.** v1 assumes **everything online** — every read and write is a live server call; pricing is server-computed (ask Odoo, get the result — extends D5). The SAP wire-compatibility mission (pseudo-SAP gateway, MSE_* registry, dsd_compatibility module) is DROPPED — the SAP package is business-logic reference only. Sales scenario first, distribution second; backend/API equipped first. Mobile features named so far: tour/visit/customer/product/config/customizing/pricing downloads; order + return uploads; visit data upload; **cancel & copy** on orders. **Config/customizing:** behavior changeable via config — model `dsd.customizing` (key/value, scope resolution global → country → sales area), semantics mined from the old app source at `/Users/kalleh/Source/Solico/MDSD` (CustomizingConstants ~75 global keys + CustomizingSalesAreaBO 68 per-SA flags) |
 | D7 | Tour birth (2026-11-18, user) | **On-demand tour from visit list.** The visit list is the day's planning unit; the tour is materialized at download time (release = download), 1:1 with a download lock. Unlock only by admin logical-delete of the tour, guarded: (a) no uploaded/linked documents on the tour, (b) the new tour gets a new id (never reuse), (c) archived tour kept with reason. List content is snapshotted into the tour at creation (later list changes don't propagate). SAP batch-generation machinery, parity message codes 300–316 and the NAST/IDoc chain are dropped; list ladder: `draft → downloaded → closed` |
 
@@ -61,8 +64,8 @@ flowchart LR
 - [ ] **3. Visit plans (strategic layer)** — plan types, plans, weekday
   lines (#4); lists + generation deferred to step 5
 - [ ] **4. Customer 360 — DSD panel** — routes read-through + geo/city
-  master fields on the partner form (#5); hierarchy/CPD/wire extras deferred
-  to the gateway step
+  master fields on the partner form (#5); geo codes interim — **Geographic
+  Master Data (P1)** replaces them with m2o hierarchy when built
 - [ ] **5. Presales day (D7)** — light visit list → on-demand tour
   materialization (1:1, snapshot, admin unlock) → visits → presale orders
   (`sale.order` per visit); first new dep: `sale`
@@ -70,7 +73,7 @@ flowchart LR
   sales area; pricelist flows from the primary SA (D5)
 - [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **8. Mobile API (D8)** — clean Odoo JSON API for the native app:
+- [ ] **8. Mobile API (D8/D9)** — clean JSON-over-HTTP API for the native app:
   auth, day-package download (tour/visits/customers/products/configs/
   customizing/prices), uploads: orders, returns, visit data, **cancel &
   copy**; client-UUID idempotency. Sales scenario first, distribution after

@@ -41,6 +41,7 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 | `active` | Boolean | — | default True |
 
 - SQL constraint: `unique (sales_org_id, dist_channel_id, division_id)`
+- `company_id` m2o `res.company` (optional, default env company) — P0-9
 - `display_name` computed: `"{org.code}/{chn.code}/{div.code}"` (e.g.
   `1000/10/01`)
 - This entity is the future home of the per-area customizing flags (the 68
@@ -53,6 +54,8 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 |---|---|---|---|
 | `partner_id` | m2o `res.partner` | yes | `ondelete='cascade'`, indexed |
 | `sales_area_id` | m2o `dsd.sales.area` | yes | `ondelete='restrict'`, indexed |
+| `is_primary` | Boolean | — | False | exactly one active primary per partner (constraint) — the deterministic "main" SA; replaces any first-row-by-id assumption (review P0) |
+| `company_id` | m2o `res.company` | — | env company | multi-company anchor added now to avoid a breaking change later |
 | `active` | Boolean | — | default True |
 | `sale_block` / `delivery_block` / `billing_block` | Boolean | — | document blocks |
 | `sale_block_reason` / `delivery_block_reason` / `billing_block_reason` | Char | — | shown only when the matching block is set |
@@ -68,25 +71,35 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 1. **Block ≠ inactive** — a blocked row stays `active` (it is still
    downloadable/emittable); archiving (`active=False`) removes it entirely.
    Never let one imply the other.
-2. **Partner-function defaults** — `@api.onchange('partner_id')` fills
-   `payer_id`, `sold_to_id`, `ship_to_id`, `bill_to_id` with `partner_id`
-   when empty (SAP default behaviour).
-3. **Pricelist sync (decision D5 — Odoo-native pricing)** — the **primary**
-   sales area (first active row by id) of a partner: if it has a
-   `pricelist_id`, keep `res.partner.property_product_pricelist` equal to it
-   (write on create/update of the row; only set, never clear). This is what
-   makes Odoo-native orders price from the customer's primary sales area.
+1b. **Primary SA** — `is_primary=True` allowed on exactly ONE active row per
+   partner (python constraint). The partner read-through fields (1.4) follow
+   the primary row. **Plant note:** `plant_id → stock.warehouse` is a
+   *deployment mapping assumption* (SAP Plant ≈ Odoo warehouse for Solico's
+   operations) — documented, revisit at the van-stock step, not a hard
+   equivalence baked into logic.
+2. **Partner-function defaults** — filled with `partner_id` when empty,
+   BOTH via `@api.onchange` (UI) AND in `create()` (API/code paths — onchange
+   alone does not cover them). Each role holds exactly one partner (single
+   m2o by design).
+3. **Pricing is per sales area, resolved at order time (D5+D9)** — the
+   pricelist is READ from the relevant `partner_sales_area_id` when an order
+   or price request is created (step 5/6 do this from the *visit's* SA).
+   Do NOT sync it onto `res.partner.property_product_pricelist` — a partner
+   with multiple SAs has multiple pricelists and the partner property can
+   hold only one.
 
 ### 1.4 `res.partner` extension (`_inherit`)
 
 | Field | Type | Notes |
 |---|---|---|
 | `sales_area_ids` | o2m `dsd.partner.sales.area` | |
-| `dsd_sales_org` / `dsd_dist_channel` / `dsd_division` | Char, computed, **stored** | trio codes of the **primary** (first active) SA; False when none |
+| `dsd_sales_org` / `dsd_dist_channel` / `dsd_division` | Char, computed, **stored** | trio codes of the **primary** (`is_primary`) SA; False when none |
 | `dsd_sale_block` / `dsd_delivery_block` / `dsd_billing_block` | Boolean, computed, stored | read-through from the primary SA |
 
-Compute must depend on the rows' `active`/block/combo-code fields so
-archiving a row re-computes (primary falls through to the next active row).
+Semantics: these partner fields are **list-filtering/display aids only** —
+blocks always live per sales-area row and are NEVER enforced customer-wide
+(review 1.5). Compute depends on `is_primary`, `active`, blocks and combo
+codes so changes recompute.
 
 ## 2. Views
 
@@ -148,12 +161,14 @@ access_dsd_partner_sales_area_system,DSD Customer Sales Area admin,dsd.partner.s
 1. duplicate combo (org/chn/div) raises `psycopg2.IntegrityError`
 2. duplicate (partner, sales_area) raises `psycopg2.IntegrityError`
 3. block keeps the row searchable; `active=False` hides it
-4. primary-SA compute: stored partner fields follow first active row, fall
-   through when archived, read blocks through
+4. primary-SA rule: `is_primary` on a second active row raises; partner
+   stored fields follow the primary row; archiving the primary row with no
+   replacement clears the read-through fields
 5. partner-function onchange defaults to the partner (`odoo.tests.Form`)
 6. two SA rows attach to one partner
-7. creating a primary row with `pricelist_id` sets
-   `partner.property_product_pricelist`
+7. pricing isolation: partner property pricelist is NEVER written by SA
+   rows (D9) — assert it stays unchanged when rows with pricelists are
+   created
 
 ## 5. Definition of done
 

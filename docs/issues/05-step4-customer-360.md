@@ -32,7 +32,7 @@ master fields.
 | Field | Type | Stored | Notes |
 |---|---|---|---|
 | `dsd_route_ids` | computed Many2many `dsd.route` | no | distinct routes via `dsd.route.customer` memberships (active + validity-open rows only) |
-| `dsd_geo_source` | Selection `debgeo/geocode/manual/gps` | yes | provenance of coordinates (`/DSD/VC_GEOCODE` parity key) |
+| `dsd_geo_source` | Selection `debgeo/geocode/manual/gps` | yes | provenance: `debgeo` = imported from legacy SAP `/DSD/RP_DEBGEO` table; `geocode` = address-geocoded; `manual` = operator-entered; `gps` = captured from device GPS. Mutations audited via standard `write_uid/write_date`; richer geo audit lands with the geofence step |
 | `dsd_geo_precision` | Char | yes | wire `PRECISID` passthrough (master-owned per M01 §3.1) |
 | `dsd_city_code` | Char | yes | `T005H.CITYC` (Iranian city code) |
 | `dsd_district` | Char | yes | wire `DISTRICT` |
@@ -43,13 +43,19 @@ numbers 1–3, `stcd2/5` tax ids + branch, CPD markers, target groups,
 geofence flag (per-SA in the package — arrives with LORD flags at the
 gateway step).
 
+**Interim note (review 4.1):** the free-char geo codes (`city_code`,
+`district`, `county_code`) are a v1 carrier; a proper **Geographic Master
+Data** model (country→province→county→city→district, translated names) is
+registered in the master-plan roadmap (P1) and these fields migrate into
+m2o references then — code must not branch on the raw strings meanwhile.
+
 ### 1.2 Behavior rules
 
-1. `dsd_route_ids`: read-only, computed from
-   `dsd.route.customer` rows where `route_id.active` AND membership window
-   covers today (`valid_from ≤ today ≤ valid_to`, empty bounds open).
-   Not stored; expose via search filter on partner (search method) —
-   minimal: field display only, search method optional.
+1. `dsd_route_ids`: read-only, computed from `dsd.route.customer` rows
+   where `route_id.active` AND membership window covers today
+   (`valid_from ≤ today ≤ valid_to`, empty bounds open). Non-stored ⇒ the
+   **search method is REQUIRED** (spec fix, review 4.3) — the "On a route"
+   filter must work; no "optional".
 2. No writes to native lat/long in this step (operators set them via the
    native Contacts form / geocoding module if installed).
 

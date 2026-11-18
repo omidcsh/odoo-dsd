@@ -65,17 +65,22 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
 | `sequence` | Integer | yes | visit order within the route (`widget="handle"` in list) |
 | `valid_from` / `valid_to` | Date | no | membership validity window |
 
-- SQL constraint: `unique (route_id, partner_id, sales_area_id)`
 - `_order = 'sequence, id'`
 
 **Behavior rules (must implement):**
 
-1. A customer MAY appear on many routes, and twice on the same route for
-   **different** sales areas — only the exact (route, partner, sales-area)
-   triple is unique.
-2. Membership ordering is the `sequence` field; no implicit re-sorting.
-3. `valid_from/valid_to` are stored now (wire/wire-parity later reads them);
-   no filtering logic in this step.
+1. **Membership history** (review 2.2): the plain unique triple is REPLACED
+   by a python constraint — for one (route, partner, sales_area), validity
+   windows must **not overlap**. A customer may leave a route and re-join
+   later as a NEW row with a later window (history preserved). One open
+   window (`valid_to` empty) per triple at a time.
+2. **Sales-area compatibility** (review 2.1): when `route.sales_area_id` is
+   set, every membership's `sales_area_id` must equal it (`ValidationError`
+   otherwise). A route without SA scope accepts any SA.
+3. Membership ordering is the `sequence` field; no implicit re-sorting.
+4. `driver_ids` = **permitted drivers** (who may ever run this route) —
+   daily driver assignment is NOT stored here; it lives on the visit
+   list/tour (step 5), which may also be validated against this permission.
 
 ## 2. Views
 
@@ -100,7 +105,8 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
 ## 4. Tests (`TransactionCase`, `@tagged('standard')`)
 
 1. duplicate route `code` raises `psycopg2.IntegrityError`
-2. duplicate (route, partner, sales_area) membership raises IntegrityError
+2. overlapping validity windows for the same (route, partner, sales_area)
+   raise `ValidationError`; sequential re-join windows are allowed
 3. same partner on **two different routes** → allowed
 4. same partner, same route, **different sales areas** → allowed (the
    disambiguation rule)

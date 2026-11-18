@@ -76,6 +76,10 @@ and external `plan_id` (gateway step).
 
 **Behavior rules (must implement):**
 
+0. **Scope consistency** (review 3.1): when `plan.sales_area_id` (or the
+   plan's `route_id.sales_area_id`) is set, every line's
+   `partner_sales_area_id.sales_area_id` must match (`ValidationError`).
+
 1. Weekday toggles ⇄ mask: setting `mon`/`tue` booleans sets/clears bits;
    writing `weekday_mask` directly updates the booleans. No dual storage.
 2. Python constraint: two lines of the same plan with the same
@@ -85,7 +89,17 @@ and external `plan_id` (gateway step).
    intersection check — divergence noted.)
 3. Plan validity: `date_from <= date_to` else `ValidationError`; line dates
    (when set) must fall inside the plan window.
-4. At least one weekday bit set per line (mask ≠ 0).
+4. `weekday_mask` CHECK: `1 <= weekday_mask <= 127` (SQL check — no
+   invalid bits); at least one weekday set per line.
+5. **Generation semantics** (canonical rule for later steps): a date is
+   visitable iff it lies inside BOTH the plan window and the line window
+   AND its weekday bit is set.
+6. **Single default type**: at most ONE active `is_default=True` plan type
+   (python constraint).
+7. **State transitions**: `draft` (fully editable) → `active` (lines become
+   readonly; date_to may be extended) → `closed` (terminal — reopen not
+   allowed; create a new plan instead). Existing generated artifacts are
+   never modified by closing a plan.
 
 ## 2. Views
 
@@ -108,10 +122,13 @@ same pattern (`r` / `ru` / `crud`).
 
 ## 4. Tests (`TransactionCase`, `@tagged('standard')`)
 
-1. type `code` unique (IntegrityError)
-2. weekday roundtrip: toggles → mask bits; direct mask write → toggles
+1. type `code` unique (IntegrityError); second active `is_default` type
+   raises
+2. weekday roundtrip: toggles → mask bits; direct mask write → toggles;
+   mask 0 and mask > 127 rejected
 3. overlapping-weekday python constraint raises for same plan + same
-   `partner_sales_area_id`; **different** PSA same customer is allowed
+   `partner_sales_area_id`; **different** PSA same customer is allowed;
+   line outside plan SA scope raises (rule 0)
 4. line with `weekday_mask = 0` raises
 5. plan window validation (`date_from > date_to` raises; line outside
    window raises)
