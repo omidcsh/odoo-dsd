@@ -142,3 +142,13 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
   `dsd-v1`) — weekday pattern + capacity fields; capacities consciously
   deferred here
 - Step 1 (#2) supplies `dsd.sales.area`
+- **SAP live-system check (2026-11-18):** standard SAP has NO customer-visit
+  route master — `TVRO` is transport routing (transit/distance/weight);
+  Solico's `ZSLC_DSD_ROUTES` is a masir→sales-office/preseller mapping with
+  NO weekdays; weekday patterns live on the visit plan
+  (`/DSD/VC_VPH` MON..SUN — standard). ⇒ our `dsd.route` is an Odoo-side
+  grouping/ordering concept; **the weekday booleans on the route are
+  dropped pending D10** (see master plan) — populate-from-plan becomes the
+  canonical weekday source, matching SAP. Migration mapping: MASIR→route
+  code, VKBUR→Odoo sales-office TBD, PRESELLER/PHONESELLER→permitted
+  drivers.

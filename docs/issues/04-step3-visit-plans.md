@@ -42,8 +42,18 @@ No native twin — custom, per package M01 §3.4. Native reuse:
 |---|---|---|---|
 | `code` | Char | yes | unique (e.g. `MW2`); `/DSD/VC_VPTYPET` replacement |
 | `name` | Char | yes | translatable |
+| `mode` | sel visit_list/shipment | yes | visit_list | from standard `/DSD/VC_VPTYPE` VLHH vs TRHH flags — what the type produces (presales list vs shipment/tour); real Solico types: MW1–MW5, YW1–YW5 |
 | `is_default` | Boolean | no | one default type is used as new-plan default |
 | `active` | Boolean | — | True |
+
+*SAP-reality note (2026-11-18, live check):* the standard plan TYPE also
+carries settlement type (SLTYP: M1/M2/YW/YZ), calendar type (CALTYP) and
+number ranges — Odoo-relevant subset adopted above; the rest joins when the
+settlement/calendar steps land. Standard `/DSD/VC_VPH` keeps the weekday
+pattern on the plan HEADER with per-line rule overrides
+(`/DSD/VC_VPP` RULEID_CUST) — pending D10, the header gains `weekday_mask`
+(7 flags, mon–fri default) and the existing line-level mask becomes an
+optional OVERRIDE (line mask empty ⇒ inherit header).
 
 ### 1.2 `dsd.visit.plan`
 

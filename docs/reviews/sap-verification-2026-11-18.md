@@ -50,7 +50,28 @@ Live system: Solico SAP (client 100), via the vsp/mcphub MCP tools
    in client 100 — which channel(s) actually run DSD presales is an open
    data question for the migration scope (check ZSLC_DSD_VP_H data).
 
-## Open decision D10 (needs user)
+## Standard-object verification (round 2, on user request — standard /DSD/* over Z)
+
+Full standard table landscape enumerated (~180 TRANSP tables: VC visit
+control, RP route planning, HH handheld/tour master, ME mobile entities,
+SL settlement, ST status). Key structures inspected:
+
+| Standard table | Content | Spec impact |
+|---|---|---|
+| `/DSD/VC_VPH` | visit plan HEADER: VPID/type/name/rule, **MON..SUN flags**, truck/trailer, start time/zone, start/dest point, DRIVER1/2, route, DATFR/DATTO + **LIMFR/LIMTO** restriction window, AUTH group, **SA trio** | weekdays-on-plan-header is STANDARD SAP (not Solico Z taste) → strengthens D10(a) |
+| `/DSD/VC_VPP` | plan POSITIONS: item no + SEQU + KUNNR + **VKORG/VTWEG/SPARTE per line** + INACTIVE flag + per-customer RULEID + waiting/driving times + contact person | validates our per-line `partner_sales_area_id` + sequence + validity; per-line rule ≈ our weekday_mask |
+| `/DSD/VC_VPTYPE` | plan TYPE is a config hub (real data: MW1–MW5, YW1–YW5): **VLHH** (visit-list doc) vs **TRHH** (shipment doc), SLTYP settlement type (M1/M2/YW/YZ), CALTYP calendar (ZB/ZP/ZV), PAFKT function, number ranges, output determination | our minimal type (code/name/default) needs a `mode` field (visit-list vs shipment production); settlement/calendar passthrough deferred to their steps |
+| `/DSD/RP_TOH` | tour header: ROUTE, VPTYP, TPLST, STOPS, MAXTIME | tour born from route+plan-type confirmed |
+| `ZSLC_DSD_*` | Z layer = enhancements of the standards (VP_H adds RULE_TYPE/WEEK_RULE; ROUTES = masir→sales-office/preseller mapping) | Z is the legacy we replace — do NOT model after it |
+
+**Refined D10 recommendation:** standard SAP = weekdays on the plan HEADER
+(+ per-line rule overrides). So: (a-refined) put the weekday pattern on
+`dsd.visit.plan` header (7 flags or mask), keep the line-level mask as an
+OPTIONAL override, and drop weekdays from `dsd.route` entirely (no standard
+or Z route master carries them). This matches `/DSD/VC_VPH`+`/DSD/VC_VPP`
+exactly.
+
+
 
 **Where does the weekday pattern live?** Options:
 (a) plan-only (SAP-faithful): drop weekdays from `dsd.route`; populate
