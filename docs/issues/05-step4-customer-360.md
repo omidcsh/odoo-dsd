@@ -33,7 +33,7 @@ master fields.
 |---|---|---|---|
 | `dsd_route_ids` | computed Many2many `dsd.route` | no | distinct routes via `dsd.route.customer` memberships (active + validity-open rows only) |
 | `dsd_geo_source` | Selection `debgeo/geocode/manual/gps` | yes | provenance: `debgeo` = imported from legacy SAP `/DSD/RP_DEBGEO` table; `geocode` = address-geocoded; `manual` = operator-entered; `gps` = captured from device GPS. Mutations audited via standard `write_uid/write_date`; richer geo audit lands with the geofence step |
-| `dsd_geo_precision` | Char | yes | wire `PRECISID` passthrough (master-owned per M01 §3.1) |
+| `dsd_geo_precision` | Char | yes | wire `PRECISID` — the device/GPS **precision class code** captured with the coordinates (quality of the location fix), stored verbatim, display-only until the geofence step defines its vocabulary (round 2) |
 | `dsd_city_code` | Char | yes | `T005H.CITYC` (Iranian city code) |
 | `dsd_district` | Char | yes | wire `DISTRICT` |
 | `dsd_county_code` | Char | yes | wire `COUNTY_CODE` |

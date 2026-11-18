@@ -137,9 +137,15 @@ package 11-IMPL §2.2 semantics), `state` sel planned/arrived/done/skipped +
    **pricelist read from the visit's `partner_sales_area_id.pricelist_id`**
    (fallback: partner property → company default — D9); `dsd_visit_id` set.
 
-**Audit (review 4.4):** `mail.thread` + activity mixin on list/tour/visit;
-`tracking=True` on states, blocks, reset reason, skip reasons — who did
-what, out of the box.
+**Audit (review 4.4, deepened round 2):** `mail.thread` + activity mixin on
+list/tour/visit; `tracking=True` captures **old value → new value, user,
+timestamp** on the sensitive fields: visit states & skip reasons, tour
+state / reset reason / unlock (incl. the force flag), blocks, driver/vehicle
+on the list, and order cancel reasons. Because every write — UI or API —
+goes through the ORM, `mail.tracking.value` covers API-originated events
+too; the API layer must NOT bypass the ORM (no raw-SQL writes). Partner
+geo fields (step 4) gain tracking when the `mail` dependency lands here.
+Full immutable event log (append-only, beyond chatter) → P2.
 
 ## 3. Views
 

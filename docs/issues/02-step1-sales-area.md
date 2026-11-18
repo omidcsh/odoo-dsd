@@ -40,7 +40,7 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 | `division_id` | m2o `dsd.division` | yes | `ondelete='restrict'` |
 | `active` | Boolean | — | default True |
 
-- SQL constraint: `unique (sales_org_id, dist_channel_id, division_id)`
+- SQL constraint (round 2): `unique (company_id, sales_org_id, dist_channel_id, division_id)` — the same trio MAY exist in different companies (multi-company policy 1c)
 - `company_id` m2o `res.company` (optional, default env company) — P0-9
 - `display_name` computed: `"{org.code}/{chn.code}/{div.code}"` (e.g.
   `1000/10/01`)
@@ -54,7 +54,7 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 |---|---|---|---|
 | `partner_id` | m2o `res.partner` | yes | `ondelete='cascade'`, indexed |
 | `sales_area_id` | m2o `dsd.sales.area` | yes | `ondelete='restrict'`, indexed |
-| `is_primary` | Boolean | — | False | exactly one active primary per partner (constraint) — the deterministic "main" SA; replaces any first-row-by-id assumption (review P0) |
+| `is_primary` | Boolean | — | False | **at most one** active primary per (partner, company) — optional, NOT mandatory (a partner may have none); the deterministic "main" SA; replaces any first-row-by-id assumption (review P0, round 2) |
 | `company_id` | m2o `res.company` | — | env company | multi-company anchor added now to avoid a breaking change later |
 | `active` | Boolean | — | default True |
 | `sale_block` / `delivery_block` / `billing_block` | Boolean | — | document blocks |
@@ -71,9 +71,20 @@ True). `display_name` = `"{code} — {name}"`. Order by `code`.
 1. **Block ≠ inactive** — a blocked row stays `active` (it is still
    downloadable/emittable); archiving (`active=False`) removes it entirely.
    Never let one imply the other.
-1b. **Primary SA** — `is_primary=True` allowed on exactly ONE active row per
-   partner (python constraint). The partner read-through fields (1.4) follow
-   the primary row. **Plant note:** `plant_id → stock.warehouse` is a
+1b. **Primary SA (round 2)** — `is_primary=True` is allowed on **at most
+   ONE active row per (partner, company)**; having none is valid. Enforced
+   TWICE: a python constraint (nice error) AND a DB partial unique index in
+   `init()` — `CREATE UNIQUE INDEX ON dsd_partner_sales_area (partner_id,
+   company_id) WHERE is_primary AND active` — so concurrent writes cannot
+   race. The partner read-through fields (1.4) follow the primary row of the
+   current company (`env.company` context).
+1c. **Multi-company policy (round 2)** — (i) the SA-combo unique becomes
+   `(company_id, sales_org_id, dist_channel_id, division_id)`: the SAME trio
+   MAY exist in different companies (catalogs themselves stay
+   company-agnostic); (ii) `dsd.partner.sales.area.company_id` must EQUAL its
+   `sales_area_id.company_id` (python constraint); (iii) one primary per
+   company per partner (1b). Full multi-company record rules remain P1.
+   **Plant note:** `plant_id → stock.warehouse` is a
    *deployment mapping assumption* (SAP Plant ≈ Odoo warehouse for Solico's
    operations) — documented, revisit at the van-stock step, not a hard
    equivalence baked into logic.
@@ -158,17 +169,23 @@ access_dsd_partner_sales_area_system,DSD Customer Sales Area admin,dsd.partner.s
 
 ## 4. Tests (`odoo.tests.common.TransactionCase`, `@tagged('standard')`)
 
-1. duplicate combo (org/chn/div) raises `psycopg2.IntegrityError`
+1. duplicate combo (org/chn/div) **within one company** raises
+   `psycopg2.IntegrityError`; the SAME trio in a second company is ALLOWED
+   (round 2)
 2. duplicate (partner, sales_area) raises `psycopg2.IntegrityError`
 3. block keeps the row searchable; `active=False` hides it
-4. primary-SA rule: `is_primary` on a second active row raises; partner
-   stored fields follow the primary row; archiving the primary row with no
-   replacement clears the read-through fields
+4. primary-SA rule: a second active primary in the same company raises;
+   one primary per second company is allowed; partner stored fields follow
+   the primary row; archiving the primary row with no replacement clears
+   the read-through fields
 5. partner-function onchange defaults to the partner (`odoo.tests.Form`)
+   AND direct `create()` fills them too (server-side default)
 6. two SA rows attach to one partner
 7. pricing isolation: partner property pricelist is NEVER written by SA
    rows (D9) — assert it stays unchanged when rows with pricelists are
    created
+8. partner-SA `company_id` differing from its combo's `company_id` raises
+   (policy 1c-ii)
 
 ## 5. Definition of done
 

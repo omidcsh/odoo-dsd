@@ -84,7 +84,7 @@ SA). Odoo model:
 | Endpoint | In | Effect |
 |---|---|---|
 | `POST /dsd/api/v1/visit/status` | `{client_uuid, visit_id, state, reason?, gps?, occurred_at}` | planned/arrived/done/skipped (reason mandatory on skip); stamps times; **idempotent on `client_uuid`** (upsert) |
-| `POST /dsd/api/v1/order` | `{client_uuid, visit_id, type: "order"\|"return", lines: [{product_id, qty, discount?}]}` | creates `sale.order` on the visit. **Return = POSITIVE quantities + `dsd_is_return=True`** (review 6.5 — no negative-qty hack); fulfilment (goods receipt / credit note) is deliberately deferred to the distribution step. Prices computed server-side; **idempotent on `client_uuid`** |
+| `POST /dsd/api/v1/order` | `{client_uuid, visit_id, type: "order"\|"return", lines: [{product_id, qty, discount?}]}` | creates `sale.order` on the visit. **Return = POSITIVE quantities + `dsd_is_return=True`** (review 6.5 — no negative-qty hack). **EXPLICITLY INTERIM (MVP carrier)**: this is not the final return model — step 7 (distribution) delivers the real design: return delivery → goods receipt into stock → credit note/refund, connected to these flagged orders. Prices computed server-side; **idempotent on `client_uuid`** |
 | `POST /dsd/api/v1/order/cancel` | `{client_uuid, reason}` | `action_cancel` with guards (not delivered/invoiced); reason logged |
 | `POST /dsd/api/v1/order/copy` | `{source_client_uuid, new_client_uuid}` | copies lines to a NEW draft order on the same visit |
 
@@ -108,8 +108,24 @@ SA). Odoo model:
   copy) require the new `group_dsd_driver`** — drivers run their own day
   (review 6.2: officers are back-office, must not gate every write).
   `group_dsd_officer` manages lists/back-office; admin = reset + config.
-- The Odoo user IS the mobile login; driver-scoped calls enforce
-  `driver_id = uid` server-side (never trusted from the payload).
+
+### 2.1 Server-side scoping (round 2 — groups alone are not authorization)
+
+1. **Identity from session, never payload**: every driver-scoped endpoint
+   resolves the tour by `(date, driver_id=uid)`; a `driver_id` or
+   `company_id` in the payload is IGNORED (server-stamped). A driver
+   physically cannot address another driver's tour — tested (cross-driver
+   isolation).
+2. **Record rules**: add `ir.access` domain rows for `group_dsd_driver` on
+   `dsd.tour`/`dsd.visit` (`[('driver_id', '=', user.id)]`) — verify at
+   implementation time that Odoo 20 `ir.access` domains evaluate `user`;
+   if not supported, the controller-level checks above are the binding
+   contract and the record rules land with the P1 security pass.
+3. **Write surface**: drivers write ONLY through the API verbs (visit
+   status, order, return, cancel, copy); they get no generic model-write
+   route. List preparation, tour reset and customizing stay officer/admin.
+4. **Multi-company**: API responses are company-scoped by the user's
+   allowed companies; full multi-company record rules → P1.
 
 ## 3. Tests (`HttpCase`, `@tagged('standard')`)
 

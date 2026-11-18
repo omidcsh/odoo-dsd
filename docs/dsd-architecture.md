@@ -46,10 +46,10 @@ flowchart LR
     S2["2. Route master<br/>& membership"]
     S3["3. Visit plans<br/>(strategic)"]
     S4["4. Customer 360<br/>extras"]
-    S5["5. Tours, visit lists<br/>& van stock"]
-    S6["6. Orders &<br/>native pricing"]
-    S7["7. Settlement &<br/>payments"]
-    S8["8. Mobile wire<br/>gateway"]
+    S5["5. Presales day<br/>list→tour→visits→orders"]
+    S6["6. Mobile API v1<br/>(sales)"]
+    S7["7. Distribution & van sales<br/>+ return fulfilment"]
+    S8["8. Settlement &<br/>payments"]
     S9["9. Reports &<br/>publish prep"]
     S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
     style S1 fill:#d4edda,stroke:#28a745
@@ -58,8 +58,9 @@ flowchart LR
 ## Notes
 
 - Mobile decision (D8): a NEW native app (Android/iOS) served by a clean
-  Odoo JSON API — the SAP wire-compatibility gateway is dropped; the SAP
-  package is business-logic reference only. Online-first.
+  JSON-over-HTTP **Mobile API** (step 6) — online-first; the SAP
+  wire-compatibility gateway is dropped; the SAP package is business-logic
+  reference only.
 - Pricing decision (D5): Odoo-native `product.pricelist` on the Odoo side;
   the SAP parity engine (`dsd_pricing`) is dropped — device keeps its own
   offline engine when the gateway step arrives.

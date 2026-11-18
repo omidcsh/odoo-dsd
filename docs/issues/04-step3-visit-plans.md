@@ -76,9 +76,12 @@ and external `plan_id` (gateway step).
 
 **Behavior rules (must implement):**
 
-0. **Scope consistency** (review 3.1): when `plan.sales_area_id` (or the
-   plan's `route_id.sales_area_id`) is set, every line's
+0. **Scope consistency** (review 3.1 + round 2): when `plan.sales_area_id`
+   (or the plan's `route_id.sales_area_id`) is set, every line's
    `partner_sales_area_id.sales_area_id` must match (`ValidationError`).
+   Additionally, if BOTH `plan.sales_area_id` and
+   `plan.route_id.sales_area_id` are set, they must be EQUAL — a plan may
+   not carry a route scoped to a different sales area than its own.
 
 1. Weekday toggles ⇄ mask: setting `mon`/`tue` booleans sets/clears bits;
    writing `weekday_mask` directly updates the booleans. No dual storage.

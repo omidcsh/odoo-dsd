@@ -31,7 +31,7 @@ gets its own issue**, and nothing is implemented without a plan issue first.
 | D4 | payment_terms1..5 wire slots | deferred with other wire fields |
 | D5 | Pricing engine | **Odoo-native `product.pricelist`** on the Odoo side; SAP parity engine (`dsd_pricing`, Phase 6 of the package) dropped; device keeps its offline engine |
 | D6 | Sales-area trio | master catalogs + TVTA-style combo entity + relationship row (not free chars) |
-| D9 | Architecture review adoption (2026-11-18, external review — verdicts in `docs/reviews/2026-11-18-architecture-review.md`) | Pricing resolves from the **visit/order's SA** at creation time (partner-property sync dropped); vehicle optional in presales (+ `fleet` dep); visit lifecycle independent of orders; visit list has one explicit `source_type`; 1-live-tour-per-list DB-enforced (partial unique index); mobile auth = session-only v1 + new `group_dsd_driver` role; day package bounded + paginated `/catalog`; idempotency on every verb (download = find-or-materialize); returns = flagged orders with POSITIVE qty (fulfilment deferred); prices endpoint takes visit/SA context; `dsd.customizing` gets value_type + per-scope partial uniques + config_version; API = plain JSON over HTTP with `{ok,…}` envelope; `mail` dep adopted for audit; `company_id` anchors on SA models |
+| D9 | Architecture review adoption (2026-11-18, external review — verdicts in `docs/reviews/2026-11-18-architecture-review.md`) | Pricing resolves from the **visit/order's SA** at creation time (partner-property sync dropped); vehicle optional in presales (+ `fleet` dep); visit lifecycle independent of orders; visit list has one explicit `source_type`; 1-live-tour-per-list DB-enforced (partial unique index); mobile auth = session-only v1 + new `group_dsd_driver` role; day package bounded + paginated `/catalog`; idempotency on every verb (download = find-or-materialize); returns = flagged orders with POSITIVE qty (fulfilment deferred); prices endpoint takes visit/SA context; `dsd.customizing` gets value_type + per-scope partial uniques + config_version; API = plain JSON over HTTP with `{ok,…}` envelope; `mail` dep adopted for audit; `company_id` anchors on SA models. **Round-2 refinements (2026-11-18):** SA combo unique becomes `(company, org, chn, div)` — same trio MAY exist in different companies; partner-SA `company_id` must match its combo; primary = **at most one** active per (partner, company), optional not mandatory, DB partial-unique-indexed; mobile security = controller-level driver scoping (`driver_id = uid`, never client-writable) + cross-driver tests, record rules where Odoo 20 `ir.access` domains allow; returns marked **interim** pending step 7's goods-receipt/credit-note design; audit = tracked fields (old/new/user/time) on visit states, skips, cancels, tour reset, geo changes |
 | D8 | Mobile (2026-11-18, user; refined same day) | **New native Android/iOS app + clean Odoo JSON API.** v1 assumes **everything online** — every read and write is a live server call; pricing is server-computed (ask Odoo, get the result — extends D5). The SAP wire-compatibility mission (pseudo-SAP gateway, MSE_* registry, dsd_compatibility module) is DROPPED — the SAP package is business-logic reference only. Sales scenario first, distribution second; backend/API equipped first. Mobile features named so far: tour/visit/customer/product/config/customizing/pricing downloads; order + return uploads; visit data upload; **cancel & copy** on orders. **Config/customizing:** behavior changeable via config — model `dsd.customizing` (key/value, scope resolution global → country → sales area), semantics mined from the old app source at `/Users/kalleh/Source/Solico/MDSD` (CustomizingConstants ~75 global keys + CustomizingSalesAreaBO 68 per-SA flags) |
 | D7 | Tour birth (2026-11-18, user) | **On-demand tour from visit list.** The visit list is the day's planning unit; the tour is materialized at download time (release = download), 1:1 with a download lock. Unlock only by admin logical-delete of the tour, guarded: (a) no uploaded/linked documents on the tour, (b) the new tour gets a new id (never reuse), (c) archived tour kept with reason. List content is snapshotted into the tour at creation (later list changes don't propagate). SAP batch-generation machinery, parity message codes 300–316 and the NAST/IDoc chain are dropped; list ladder: `draft → downloaded → closed` |
 
@@ -45,10 +45,10 @@ flowchart LR
     S2["2. Route master<br/>& membership"]
     S3["3. Visit plans<br/>& lists"]
     S4["4. Customer 360<br/>extras"]
-    S5["5. Tours &<br/>van stock"]
-    S6["6. Orders &<br/>native pricing"]
-    S7["7. Settlement &<br/>payments"]
-    S8["8. Mobile wire<br/>gateway"]
+    S5["5. Presales day<br/>list→tour→visits→orders"]
+    S6["6. Mobile API v1<br/>(sales)"]
+    S7["7. Distribution & van sales<br/>+ return fulfilment"]
+    S8["8. Settlement &<br/>payments"]
     S9["9. Reports &<br/>publish prep"]
     S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
     style S1 fill:#d4edda,stroke:#28a745
@@ -66,18 +66,20 @@ flowchart LR
 - [ ] **4. Customer 360 — DSD panel** — routes read-through + geo/city
   master fields on the partner form (#5); geo codes interim — **Geographic
   Master Data (P1)** replaces them with m2o hierarchy when built
-- [ ] **5. Presales day (D7/D9)** — light visit list → on-demand tour
+- [ ] **5. Presales day (D7/D9)** (#6) — light visit list → on-demand tour
   materialization (1:1, snapshot, admin unlock) → visits → presale orders
-  (`sale.order` per visit); deps +sale/fleet/mail (#6)
-- [ ] **6. Orders & native pricing** — `sale.order` capture stamped with
-  sales area; pricelist flows from the primary SA (D5)
-- [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
+  (`sale.order` per visit, **pricelist from the VISIT's SA**, never the
+  partner-level primary); deps +sale/fleet/mail. Order capture and native
+  pricing live HERE (formerly a separate step — merged).
+- [ ] **6. Mobile API v1 (D8/D9)** (#7) — JSON-over-HTTP, session-only auth,
+  `group_dsd_driver` role, idempotent verbs (download = find-or-materialize),
+  paginated `/catalog`, prices in visit-SA context, cancel & copy,
+  positive-qty interim returns
+- [ ] **7. Distribution & van sales** — van stock/loading/COCI/reload +
+  mobile-API extension + **return fulfilment** (goods receipt, credit note —
+  the FINAL return design; step 6's flagged order is explicitly interim)
+- [ ] **8. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **8. Mobile API (D8/D9)** — JSON-over-HTTP API v1 for the native app
-  (#7):
-  auth, day-package download (tour/visits/customers/products/configs/
-  customizing/prices), uploads: orders, returns, visit data, **cancel &
-  copy**; client-UUID idempotency. Sales scenario first, distribution after
 - [ ] **9. Reports & publish prep** — QWeb reports, README/icon, suite
   packaging, license pass
 
