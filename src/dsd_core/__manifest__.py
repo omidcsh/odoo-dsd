@@ -1,6 +1,6 @@
 {
     'name': 'DSD Core',
-    'version': '20.0.1.1.0',
+    'version': '20.0.1.2.0',
     'category': 'Services/Direct Store Delivery',
     'summary': 'DSD base: sales-area master data (org/channel/division, valid combinations, customer sales areas)',
     'description': """
@@ -32,6 +32,7 @@ Spec: docs/plans/2026-11-18-sales-area.md (v2.1).
         'security/ir.access.csv',
         'views/dsd_sales_area_views.xml',
         'views/dsd_partner_sales_area_views.xml',
+        'views/dsd_route_views.xml',
         'views/res_partner_views.xml',
         'views/dsd_menus.xml',
     ],

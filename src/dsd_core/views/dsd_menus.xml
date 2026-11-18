@@ -15,6 +15,11 @@
               action="action_dsd_sales_area"
               sequence="10"/>
 
+    <menuitem id="menu_dsd_routes"
+              parent="menu_dsd_config"
+              action="action_dsd_route"
+              sequence="15"/>
+
     <menuitem id="menu_dsd_sales_orgs"
               parent="menu_dsd_config"
               action="action_dsd_sales_org"
