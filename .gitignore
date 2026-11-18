@@ -5,3 +5,8 @@ __pycache__/
 backups/
 Odoo Source/
 odoo-data/
+
+# local reference & debug materials — never commit or publish
+sap-dsd/
+scripts/
+.zcodeignore
