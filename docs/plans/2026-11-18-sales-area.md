@@ -1,11 +1,44 @@
 # Plan — Sales Area (first feature, new module)
 
-**Date:** 2026-11-18 · **Branch:** `feature/new-module` · **Status:** awaiting decisions §7
+**Date:** 2026-11-18 · **Branch:** `feature/new-module` · **Status:** scope
+narrowed to v2-minimal (user: «فقط sales area») — ready to build
 
 Adds the SAP SD **sales area** concept (VKORG/VTWEG/SPART trio) as the first
 feature of the new module. Sources: package `odoo/modules/M01-SD-FOUNDATION`
 §3.1–3.2, `odoo/11-IMPL-dsd_core` §2.7, `mobile/mse-object-registry.csv`
 (MSE_CUSTOMER_SA = 32 fields, MSE_CUSTOMER_PF), agent-notes 04 §6.
+
+## 0. Build scope v2 — ONLY sales area, nothing else
+
+**In (the whole build):**
+1. Module skeleton `src/dsd_core/` (manifest, depends `base, product, stock`,
+   security groups, ir.access.csv — Odoo 20 format)
+2. Model `dsd.partner.sales.area`: `partner_id` + trio (required) + SQL
+   unique `(partner, org, chn, div)` + `active` + `name` compute
+3. Blocks: `sale/delivery/billing_block` bool + 3 reason chars
+4. Partner functions per SA: `payer_id / sold_to_id / ship_to_id / bill_to_id`
+   m2o res.partner, default = parent partner (onchange)
+5. Native reuse: `plant_id` m2o stock.warehouse, `pricelist_id` m2o
+   product.pricelist
+6. `res.partner`: `sales_area_ids` o2m + **Sales Areas** tab (tree+form),
+   primary-SA computed read fields (`dsd_sales_org/dist_channel/division`),
+   related block booleans for filtering
+7. 5 tests (constraint, block≠inactive, primary compute, PF defaults, 2-SA view)
+
+**Out — deferred (add later via module upgrade; adding columns needs no
+migration, so deferring is free):**
+- All wire passthroughs: payment_terms1-5, pay_code, collect_type,
+  invoice_payer, is_cash_payer, pod_inv, check_zterm, message_type,
+  company_code, price_group, customer_group(+2-5), emse_kalks, emse_vsort —
+  join when the compatibility emitter needs them
+- LORD online flags OD_*, geofence, route/calendar/visit_frequency links
+- Demo data, standalone DSD menus/app icon, emitter, `crm.team` mapping
+- Pricing: per D5, Odoo-native pricelist only (already minimal)
+
+**Defaults taken (veto with one word, otherwise final):**
+- D1 → module name **`dsd_core`** (package specs reference it everywhere)
+- D2 → **no demo data** in this slice
+- D3 → **clean field names** (no `x_` prefix; comments link IMPL names)
 
 ## 1. Odoo-native survey (rule: standard first) — verdict: **no native twin**
 
@@ -56,53 +89,37 @@ visit-identity triple (agent-notes 04, implication 4).
 - `plant_id` m2o `stock.warehouse` (wire `PLANT`)
 - `pricelist_id` m2o `product.pricelist` (wire `PRC_LIST`). Primary-SA pricelist
   syncs to `res.partner.property_product_pricelist` so Odoo-native orders price
-  from it automatically (decision D4/P, 2026-11-18: **use Odoo pricing**).
+  from it automatically (decision D5, 2026-11-18: **use Odoo pricing**).
 
-**Pricing keys — wire-only chars (decision: Odoo pricing, no server logic)**
-The unmodified device runs its own offline SAP-condition engine and reads these
-keys from the download; Odoo stores them as data and emits them, nothing more:
-- `price_group` (KONDA), `customer_group` + `customer_group1..5` (KUKLA/KVGR1-5),
-  `emse_kalks` (customer pricing procedure — SAP schema key, M03 PC-01),
-  `emse_vsort` (proposal/sort key)
+**Deferred fields (§0) — not in this build:** pricing keys (KONDA/KVGR1-5/
+KALKS/VSORT), payment_terms1-5, pay_code, collect_type, invoice_payer,
+is_cash_payer, pod_inv, check_zterm, message_type, company_code, OD_* online
+flags, geofence, route/calendar/visit_frequency. All join later via plain
+module upgrade (new columns, no migration).
 
-**Consequence for M03/12-IMPL (recorded 2026-11-18):** the custom condition-
-technique parity engine (`dsd_pricing`, Phase 6) is **not built**. Split of
-pricing authority: device computes offline (wire fidelity, uploads accepted as-
-priced); Odoo-native orders and any LORD price answers use `product.pricelist`.
-This consciously relaxes package invariant #3 (zero-tolerance parity) to
-"each engine in its own domain".
-
-**Other passthrough (wire columns, consumed by M02/M07 later)**
-- `pay_code`, `collect_type`, `invoice_payer` (char)
-- `payment_terms1..5` char (wire TERMS_OF_PAYMT1-5; native m2o
-  `account.payment.term` rejected for now — wire has 5 slots, decide at M02/M07)
-- `is_cash_payer` boolean, `pod_inv` (PodInv), `check_zterm`, `message_type`,
-  `company_code` (char/bool passthrough)
-
-**Online-service flags stored per SA** (11-IMPL §2.4: onlinePricing, credit
-check on/offline, ATP, due-open-items on/offline → `od_op, od_cco, od_ccon,
-od_atp, od_doivo, od_doivon` boolean, default from customizing later)
-
-**M01 planning columns** — `geofence` bool now; `route_id`, `calendar_id`,
-`visit_frequency` **deferred** to the route/visit-plan feature (their models
-don't exist yet).
+**Architecture note (recorded, D5):** the custom condition-technique parity
+engine (`dsd_pricing`, Phase 6) is **not built**. Device computes offline;
+uploads accepted as-priced; Odoo-native orders and LORD price answers use
+`product.pricelist`. Package invariant #3 consciously relaxed to "each engine
+in its own domain".
 
 ### 2.2 `res.partner` extensions
 
 - `sales_area_ids` o2m dsd.partner.sales.area
 - `sales_area_count` computed, with **Sales Areas** tab on the partner form
   (Customer 360, M01 §3.6) — editable list/tree, form view for detail
-- `x_sales_org/x_dist_channel/x_division` computed from **primary** (first
-  active) SA — classification fields the compatibility filters will query
-  (01-FOUNDATION mapping). Name prefix: see decision §7-D3.
-- `sale_block_sales/delivery/billing` related from primary SA (list filtering)
+- `dsd_sales_org / dsd_dist_channel / dsd_division` computed from **primary**
+  (first active) SA — classification fields the compatibility filters will
+  query later (01-FOUNDATION mapping; clean names per D3)
+- `dsd_sale_block / dsd_delivery_block / dsd_billing_block` related from
+  primary SA (list filtering)
 
-### 2.3 Views & menu
+### 2.3 Views
 
-- Partner form: new **Sales Areas** page (notebook) with the o2m
-- Standalone list+form+search for SA (menu: DSD → Master Data → Sales Areas;
-  top menu only if user wants an app icon)
-- Search filters: blocked-for-sale / inactive / by sales org
+- Partner form: new **Sales Areas** notebook page with the o2m (tree+form)
+- Search filters on the SA list: blocked-for-sale / inactive / by sales org
+- No standalone menu in this slice — the partner tab is the UX; the list is
+  reachable from it (dedicated DSD menu arrives with the app structure)
 
 ### 2.4 Security (Odoo 20 format!)
 
@@ -124,7 +141,7 @@ don't exist yet).
 
 ## 3. Module bootstrap (this is feature #1 — skeleton comes with it)
 
-- `src/<tech_name>/` with `__manifest__.py` (version 20.0.1.0.0, LGPL-3),
+- `src/dsd_core/` with `__manifest__.py` (version 20.0.1.0.0, LGPL-3),
   `depends`: **`base`, `product`, `stock`** only (pricelist + warehouse come
   from there; `sale` joins when order ingest lands — lean base keeps the
   module publishable)
@@ -132,32 +149,31 @@ don't exist yet).
 
 ## 4. Explicitly out of scope (later features, do not build now)
 
+- All deferred fields of §0 (wire passthroughs, OD_* flags, planning columns)
 - Wire emitter `MSE_CUSTOMER_SA/PF` assembly (→ compatibility module)
-- Pricing consumption of price_group/customer_pricing_procedure (→ M03)
 - Route determination key usage (→ M02 / FLOW-014)
 - `crm.team` mapping for ZTB_DSD_SAL_TEAM (unconfirmed candidate)
 - Customizing seed values (blocked on SAP export A-7)
 
 ## 5. Build order
 
-1. Decide §7 → module name + branch rename
-2. Skeleton + security groups
-3. `dsd.partner.sales.area` model + constraint + computes
-4. partner extensions + views + menu
-5. tests → run: `./venv/bin/python -m odoo -c odoo.conf -d odoo -i <module> --test-enable --stop-after-init` (fresh test DB if wanted)
-6. commit on `feature/new-module` (→ renamed branch)
+1. Skeleton `src/dsd_core/` + security groups + ir.access.csv
+2. `dsd.partner.sales.area` model + constraint + computes
+3. partner extensions + partner-form tab + search views
+4. tests → run: `./venv/bin/python -m odoo -c odoo.conf -d odoo -i dsd_core --test-enable --stop-after-init`
+5. commit on `feature/new-module` (rename branch to `feature/dsd-core`)
 
 ## 6. Effort
 
 One focused session (~half day) including tests. No DB/UI verification beyond
 module install + form smoke via backend.
 
-## 7. Decisions needed (blocking build start)
+## 7. Decision log (nothing blocking — defaults final unless vetoed)
 
-| # | Decision | Options | Recommendation |
-|---|---|---|---|
-| D1 | Module technical name | (a) `dsd_core` per package specs · (b) fresh name for the publishable product (e.g. `dsd_sale` suite root) | **(a)** — every IMPL doc references it; rename later is cheap, doc drift is not |
-| D2 | Multi-SA at go-live | model supports N; seed demo with 1 or 2 SAs per partner? | 2 in demo (exercises the machinery), production = Solico's real count |
-| D3 | Partner-field naming | (a) `x_` prefix as IMPL docs do · (b) clean `dsd_`-names since this module will be published | **(b)** clean names + comment linking the IMPL `x_` name for cross-referencing |
-| D4 | payment_terms1..5 | char passthrough now vs account.payment.term m2o | char now (wire has 5 slots; Odoo has 1 field — revisit at M02/M07) |
-| D5 | pricing engine | (a) SAP condition-technique parity engine per 12-IMPL (Phase 6) · (b) Odoo native `product.pricelist` on Odoo side | **resolved (b), user 2026-11-18: "use Odoo pricing"** — `PRC_LIST` = native m2o + partner sync; KONDA/KVGR*/KALKS/VSORT = wire-only chars; `dsd_pricing` engine dropped, invariant #3 relaxed to "each engine in its own domain" (§2.1) |
+| # | Decision | Outcome |
+|---|---|---|
+| D1 | Module technical name | **`dsd_core`** (default taken — package docs reference it; rename before publish is the only cheap moment, flag again then) |
+| D2 | Demo data | **none** in this slice |
+| D3 | Partner-field naming | **clean names** (`dsd_*`), comments link IMPL `x_` names |
+| D4 | payment_terms1..5 | deferred with the other wire fields (§0) |
+| D5 | pricing engine | **Odoo native pricing** (user, 2026-11-18) — see §2.1 note |
