@@ -20,6 +20,18 @@ gets its own issue**, and nothing is implemented without a plan issue first.
 4. **Publishable hygiene** — LGPL-3, clean field names, lean `depends`,
    Odoo 20 formats (`ir.access.csv`, `res.groups.privilege`,
    `models.Constraint`, `<list>` views).
+5. **Pre-post consistency checklist** (added after review rounds 1–2 —
+   every spec issue is checked against it before posting/updating):
+   grep the corpus for superseded wording after any decision; every named
+   model ↔ providing module ↔ `depends`; concurrency invariants get
+   DB-level enforcement (partial unique indexes, not python-only guards);
+   business rules must survive the "successful visit with zero orders"
+   scenario; ONE auth mechanism with identity from the session and
+   per-role server-side data visibility; every client mutation idempotent
+   (retries return the original result, never an error); unique
+   constraints have no NULL holes; all enum values and codes defined;
+   issue↔roadmap↔diagram numbering consistent; Odoo-20-specific syntax
+   verified against the local source tree.
 
 ## Decisions log
 
