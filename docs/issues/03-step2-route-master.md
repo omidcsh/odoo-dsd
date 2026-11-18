@@ -49,8 +49,12 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
 | `sales_area_id` | m2o `dsd.sales.area` | no | | optional scoping to one sales-area combo (package had trio chars; we have the combo from step 1) |
 | `warehouse_id` | m2o `stock.warehouse` | no | | departure/shipping point (`shipping_point` in M01 §3.3) |
 | `driver_ids` | m2m `res.users` | no | | permitted drivers (package: replaces ZDSD_DRV_CUST permission layer together with membership) |
-| `mon`…`sun` | Boolean ×7 | — | mon–fri True | serving-day pattern; consumed by visit planning (next step). Prior art: legacy v1 route model |
 | `customer_sequence_ids` | o2m `dsd.route.customer` | — | | ordered membership (1.2), context default route |
+
+**D10 FINAL (2026-11-18): no weekday fields on the route** — weekday
+patterns live on the visit plan (step 3 header mask + optional line
+override), matching standard `/DSD/VC_VPH`. The route is purely a
+grouping/ordering master.
 
 - `display_name`: `"{code} — {name}"`; `_order = 'code'`
 - No chatter yet (`mail` stays out of depends — same policy as #2).
@@ -84,10 +88,9 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
 
 ## 2. Views
 
-- Route form: sheet with code/name/sales area/warehouse/drivers + weekday
-  pattern group (7 booleans in one row); notebook page **"Customers"** with
-  an **editable** `<list>`: handle (sequence), partner, sales area,
-  valid_from, valid_to.
+- Route form: sheet with code/name/sales area/warehouse/drivers; notebook
+  page **"Customers"** with an **editable** `<list>`: handle (sequence),
+  partner, sales area, valid_from, valid_to.
 - Route list + search (by sales area, warehouse, driver, archived).
 - Membership standalone list/form not required (managed from the route) —
   but keep the model searchable for later steps.
@@ -112,7 +115,8 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
    disambiguation rule)
 5. membership order: create out of order, `_order`/search returns by
    `sequence` then id
-6. weekday defaults: new route has mon–fri True, sat/sun False
+6. SA compatibility: membership with an SA differing from the route's
+   scoped SA raises; route without SA scope accepts any SA
 
 ## 5. Definition of done
 
@@ -147,8 +151,8 @@ Native reuse in this step: `stock.warehouse` (departure/shipping point),
   Solico's `ZSLC_DSD_ROUTES` is a masir→sales-office/preseller mapping with
   NO weekdays; weekday patterns live on the visit plan
   (`/DSD/VC_VPH` MON..SUN — standard). ⇒ our `dsd.route` is an Odoo-side
-  grouping/ordering concept; **the weekday booleans on the route are
-  dropped pending D10** (see master plan) — populate-from-plan becomes the
-  canonical weekday source, matching SAP. Migration mapping: MASIR→route
+  grouping/ordering concept; the weekday booleans were dropped (D10 final) —
+  populate-from-plan is the canonical weekday source, matching SAP.
+  Migration mapping: MASIR→route
   code, VKBUR→Odoo sales-office TBD, PRESELLER/PHONESELLER→permitted
   drivers.
