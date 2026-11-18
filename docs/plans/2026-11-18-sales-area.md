@@ -54,15 +54,30 @@ visit-identity triple (agent-notes 04, implication 4).
 
 **Native-reuse columns**
 - `plant_id` m2o `stock.warehouse` (wire `PLANT`)
-- `pricelist_id` m2o `product.pricelist` (wire `PRC_LIST`)
+- `pricelist_id` m2o `product.pricelist` (wire `PRC_LIST`). Primary-SA pricelist
+  syncs to `res.partner.property_product_pricelist` so Odoo-native orders price
+  from it automatically (decision D4/P, 2026-11-18: **use Odoo pricing**).
 
-**Pricing/logistics passthrough (wire columns, consumed by M03/M02 later)**
-- `price_group`, `customer_group`, `customer_group2..5`, `customer_pricing_procedure`,
-  `customer_proposal_id`, `pay_code`, `collect_type`, `invoice_payer` (char)
+**Pricing keys — wire-only chars (decision: Odoo pricing, no server logic)**
+The unmodified device runs its own offline SAP-condition engine and reads these
+keys from the download; Odoo stores them as data and emits them, nothing more:
+- `price_group` (KONDA), `customer_group` + `customer_group1..5` (KUKLA/KVGR1-5),
+  `emse_kalks` (customer pricing procedure — SAP schema key, M03 PC-01),
+  `emse_vsort` (proposal/sort key)
+
+**Consequence for M03/12-IMPL (recorded 2026-11-18):** the custom condition-
+technique parity engine (`dsd_pricing`, Phase 6) is **not built**. Split of
+pricing authority: device computes offline (wire fidelity, uploads accepted as-
+priced); Odoo-native orders and any LORD price answers use `product.pricelist`.
+This consciously relaxes package invariant #3 (zero-tolerance parity) to
+"each engine in its own domain".
+
+**Other passthrough (wire columns, consumed by M02/M07 later)**
+- `pay_code`, `collect_type`, `invoice_payer` (char)
 - `payment_terms1..5` char (wire TERMS_OF_PAYMT1-5; native m2o
-  `account.payment.term` rejected for now — wire has 5 slots, decide at M02)
+  `account.payment.term` rejected for now — wire has 5 slots, decide at M02/M07)
 - `is_cash_payer` boolean, `pod_inv` (PodInv), `check_zterm`, `message_type`,
-  `company_code`, `emse_kalks`, `emse_vsort` (char/bool passthrough)
+  `company_code` (char/bool passthrough)
 
 **Online-service flags stored per SA** (11-IMPL §2.4: onlinePricing, credit
 check on/offline, ATP, due-open-items on/offline → `od_op, od_cco, od_ccon,
@@ -145,3 +160,4 @@ module install + form smoke via backend.
 | D2 | Multi-SA at go-live | model supports N; seed demo with 1 or 2 SAs per partner? | 2 in demo (exercises the machinery), production = Solico's real count |
 | D3 | Partner-field naming | (a) `x_` prefix as IMPL docs do · (b) clean `dsd_`-names since this module will be published | **(b)** clean names + comment linking the IMPL `x_` name for cross-referencing |
 | D4 | payment_terms1..5 | char passthrough now vs account.payment.term m2o | char now (wire has 5 slots; Odoo has 1 field — revisit at M02/M07) |
+| D5 | pricing engine | (a) SAP condition-technique parity engine per 12-IMPL (Phase 6) · (b) Odoo native `product.pricelist` on Odoo side | **resolved (b), user 2026-11-18: "use Odoo pricing"** — `PRC_LIST` = native m2o + partner sync; KONDA/KVGR*/KALKS/VSORT = wire-only chars; `dsd_pricing` engine dropped, invariant #3 relaxed to "each engine in its own domain" (§2.1) |
