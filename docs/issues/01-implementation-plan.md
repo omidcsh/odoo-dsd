@@ -37,14 +37,15 @@ See `docs/dsd-architecture.md` in the monorepo (Mermaid; also below).
 ```mermaid
 flowchart LR
     S1["✅ 1. Sales Area<br/>dsd_core"]
-    S2["2. Route &<br/>visit plans"]
-    S3["3. Customer 360<br/>extras"]
-    S4["4. Tours &<br/>van stock"]
-    S5["5. Orders &<br/>native pricing"]
-    S6["6. Settlement &<br/>payments"]
-    S7["7. Mobile wire<br/>gateway"]
-    S8["8. Reports &<br/>publish prep"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+    S2["2. Route master<br/>& membership"]
+    S3["3. Visit plans<br/>& lists"]
+    S4["4. Customer 360<br/>extras"]
+    S5["5. Tours &<br/>van stock"]
+    S6["6. Orders &<br/>native pricing"]
+    S7["7. Settlement &<br/>payments"]
+    S8["8. Mobile wire<br/>gateway"]
+    S9["9. Reports &<br/>publish prep"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
     style S1 fill:#d4edda,stroke:#28a745
 ```
 
@@ -52,21 +53,23 @@ flowchart LR
 
 - [x] **1. Sales Area entities** — org/channel/division catalogs, valid-combo
   entity, customer relationship row, partner tab, Odoo-native plant/pricelist
-  links (#2 — code complete on `feature/dsd-core`, 9 tests green)
-- [ ] **2. Route & visit plans** — `dsd.route`, route customer membership,
-  visit plans/lists keyed on sales area (survey FSM/route concepts first)
-- [ ] **3. Customer 360 extras** — hierarchy, geo fields, blocks propagation
-  (wire passthroughs join here or at step 7, only when consumed)
-- [ ] **4. Tours & van stock** — tours on `stock.picking.batch`, van as
+  links (#2 — dev task; reference impl on `feature/dsd-core`, 9 tests green)
+- [ ] **2. Route master & membership** — `dsd.route` (weekday pattern,
+  warehouse, drivers, SA scope) + ordered customer membership (#3)
+- [ ] **3. Visit plans & lists** — plan types, plan/lines, visit lists and
+  generation machinery (M01 §3.4–§3.6, parity message codes)
+- [ ] **4. Customer 360 extras** — hierarchy, geo fields, blocks propagation
+  (wire passthroughs join here or at the gateway step, only when consumed)
+- [ ] **5. Tours & van stock** — tours on `stock.picking.batch`, van as
   stock location, check-out/in day cycle
-- [ ] **5. Orders & native pricing** — `sale.order` capture stamped with
+- [ ] **6. Orders & native pricing** — `sale.order` capture stamped with
   sales area; pricelist flows from the primary SA (D5)
-- [ ] **6. Settlement & payments** — COCI settlement, `account.payment`
+- [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **7. Mobile wire gateway** — `dsd_compatibility`: the 3 endpoints,
+- [ ] **8. Mobile wire gateway** — `dsd_compatibility`: the 3 endpoints,
   `zcheck_user`, download emitters (wire fields materialize here),
   upload ingest keyed on (guid, object, business key)
-- [ ] **8. Reports & publish prep** — QWeb reports, README/icon, suite
+- [ ] **9. Reports & publish prep** — QWeb reports, README/icon, suite
   packaging, license pass
 
 ## References
