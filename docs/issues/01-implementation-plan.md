@@ -56,12 +56,13 @@ flowchart LR
   links (#2 — dev task; reference impl on `feature/dsd-core`, 9 tests green)
 - [ ] **2. Route master & membership** — `dsd.route` (weekday pattern,
   warehouse, drivers, SA scope) + ordered customer membership (#3)
-- [ ] **3. Visit plans & lists** — plan types, plan/lines, visit lists and
-  generation machinery (M01 §3.4–§3.6, parity message codes)
+- [ ] **3. Visit plans (strategic layer)** — plan types, plans, weekday
+  lines (#4); lists + generation deferred to step 5
 - [ ] **4. Customer 360 extras** — hierarchy, geo fields, blocks propagation
   (wire passthroughs join here or at the gateway step, only when consumed)
-- [ ] **5. Tours & van stock** — tours on `stock.picking.batch`, van as
-  stock location, check-out/in day cycle
+- [ ] **5. Tours, visit lists & van stock** — tours on
+  `stock.picking.batch`, visit lists + generation machinery (M01 §3.5–3.6),
+  van as stock location, check-out/in day cycle
 - [ ] **6. Orders & native pricing** — `sale.order` capture stamped with
   sales area; pricelist flows from the primary SA (D5)
 - [ ] **7. Settlement & payments** — COCI settlement, `account.payment`
