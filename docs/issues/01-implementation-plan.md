@@ -58,8 +58,9 @@ flowchart LR
   warehouse, drivers, SA scope) + ordered customer membership (#3)
 - [ ] **3. Visit plans (strategic layer)** — plan types, plans, weekday
   lines (#4); lists + generation deferred to step 5
-- [ ] **4. Customer 360 extras** — hierarchy, geo fields, blocks propagation
-  (wire passthroughs join here or at the gateway step, only when consumed)
+- [ ] **4. Customer 360 — DSD panel** — routes read-through + geo/city
+  master fields on the partner form (#5); hierarchy/CPD/wire extras deferred
+  to the gateway step
 - [ ] **5. Tours, visit lists & van stock** — tours on
   `stock.picking.batch`, visit lists + generation machinery (M01 §3.5–3.6),
   van as stock location, check-out/in day cycle
