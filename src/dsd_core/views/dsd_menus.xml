@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dsd_root"
+              name="DSD"
+              sequence="90"/>
+
+    <menuitem id="menu_dsd_config"
+              name="Configuration"
+              parent="menu_dsd_root"
+              sequence="99"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_dsd_sales_areas"
+              parent="menu_dsd_config"
+              action="action_dsd_sales_area"
+              sequence="10"/>
+
+    <menuitem id="menu_dsd_sales_orgs"
+              parent="menu_dsd_config"
+              action="action_dsd_sales_org"
+              sequence="20"/>
+
+    <menuitem id="menu_dsd_distribution_channels"
+              parent="menu_dsd_config"
+              action="action_dsd_distribution_channel"
+              sequence="30"/>
+
+    <menuitem id="menu_dsd_divisions"
+              parent="menu_dsd_config"
+              action="action_dsd_division"
+              sequence="40"/>
+
+    <menuitem id="menu_dsd_partner_sales_areas"
+              parent="menu_dsd_config"
+              action="action_dsd_partner_sales_area"
+              sequence="50"/>
+</odoo>

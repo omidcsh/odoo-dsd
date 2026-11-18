@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dsd_partner_sales_area_list" model="ir.ui.view">
+        <field name="name">dsd.partner.sales.area.list</field>
+        <field name="model">dsd.partner.sales.area</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+                <field name="sales_area_id"/>
+                <field name="plant_id" optional="show"/>
+                <field name="pricelist_id" optional="show"/>
+                <field name="sale_block" optional="hide"/>
+                <field name="delivery_block" optional="hide"/>
+                <field name="billing_block" optional="hide"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dsd_partner_sales_area_form" model="ir.ui.view">
+        <field name="name">dsd.partner.sales.area.form</field>
+        <field name="model">dsd.partner.sales.area</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="sales_area_id"/>
+                            <field name="plant_id"/>
+                            <field name="pricelist_id"/>
+                        </group>
+                        <group name="blocks" string="Document Blocks">
+                            <field name="sale_block"/>
+                            <field name="sale_block_reason"
+                                   invisible="not sale_block"/>
+                            <field name="delivery_block"/>
+                            <field name="delivery_block_reason"
+                                   invisible="not delivery_block"/>
+                            <field name="billing_block"/>
+                            <field name="billing_block_reason"
+                                   invisible="not billing_block"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group name="partner_functions" string="Partner Functions">
+                        <group>
+                            <field name="sold_to_id"/>
+                            <field name="ship_to_id"/>
+                        </group>
+                        <group>
+                            <field name="bill_to_id"/>
+                            <field name="payer_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dsd_partner_sales_area_search" model="ir.ui.view">
+        <field name="name">dsd.partner.sales.area.search</field>
+        <field name="model">dsd.partner.sales.area</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="sales_area_id"/>
+                <field name="plant_id"/>
+                <filter name="sale_blocked" string="Sales Blocked"
+                        domain="[('sale_block', '=', True)]"/>
+                <filter name="delivery_blocked" string="Delivery Blocked"
+                        domain="[('delivery_block', '=', True)]"/>
+                <filter name="billing_blocked" string="Billing Blocked"
+                        domain="[('billing_block', '=', True)]"/>
+                <filter name="archived" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_by_sales_area" string="Sales Area"
+                            context="{'group_by': 'sales_area_id'}"/>
+                    <filter name="group_by_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dsd_partner_sales_area" model="ir.actions.act_window">
+        <field name="name">Customer Sales Areas</field>
+        <field name="res_model">dsd.partner.sales.area</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

@@ -113,6 +113,9 @@ Master Data, Reporting, Configuration). Territories/locations, day routes
 | 7 | `report_file` field on ir.actions.report | removed |
 | 8 | `resource.calendar.tz`, `two_weeks_calendar`, attendance `week_type`/`display_type` | gone — use `company_id.tz`; attendance keeps `hour_from/hour_to/dayofweek/day_period` |
 | 9 | `stock.move.product_uom` | renamed `uom_id` (`product_uom_qty` stays) |
+| 10 | `res.groups.category_id` (XML: `<field name="category_id" ref="module_category_x"/>`) | **removed** — group scopes are now `res.groups.privilege` records; create one (`<record model="res.groups.privilege">`, optional `category_id` → `ir.module.category`) and set `<field name="privilege_id" ref="..."/>` on groups (pattern: `stock/security/stock_security.xml`) |
+| 11 | `<group expand="0" string="Group By">` in search views | `expand` attribute removed — plain `<group>` wrapping the `context="{'group_by': ...}"` filters |
+| 12 | `_sql_constraints = [(name, sql, msg)]` | class-attribute constraints: `_name_uniq = models.Constraint('unique (col)', 'message')` (pattern: `res_company.py`) |
 
 Also: domains in `ir.access` containing `company_ids` are FINE (core uses them
 too); a `ValueError ... malformed node` from `ir_access.py` in the logs is a

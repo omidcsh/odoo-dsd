@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_dsd_sales_areas" model="ir.ui.view">
+        <field name="name">res.partner.form.dsd.sales.areas</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="dsd_sales_areas" string="Sales Areas">
+                    <field name="sales_area_ids">
+                        <list>
+                            <field name="sales_area_id"/>
+                            <field name="plant_id" optional="show"/>
+                            <field name="pricelist_id" optional="show"/>
+                            <field name="sale_block" optional="hide"/>
+                            <field name="delivery_block" optional="hide"/>
+                            <field name="billing_block" optional="hide"/>
+                            <field name="active" column_invisible="1"/>
+                        </list>
+                        <form>
+                            <group>
+                                <group>
+                                    <field name="sales_area_id"/>
+                                    <field name="plant_id"/>
+                                    <field name="pricelist_id"/>
+                                </group>
+                                <group name="blocks" string="Document Blocks">
+                                    <field name="sale_block"/>
+                                    <field name="sale_block_reason"
+                                           invisible="not sale_block"/>
+                                    <field name="delivery_block"/>
+                                    <field name="delivery_block_reason"
+                                           invisible="not delivery_block"/>
+                                    <field name="billing_block"/>
+                                    <field name="billing_block_reason"
+                                           invisible="not billing_block"/>
+                                    <field name="active"/>
+                                </group>
+                            </group>
+                            <group name="partner_functions" string="Partner Functions">
+                                <group>
+                                    <field name="sold_to_id"/>
+                                    <field name="ship_to_id"/>
+                                </group>
+                                <group>
+                                    <field name="bill_to_id"/>
+                                    <field name="payer_id"/>
+                                </group>
+                            </group>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
