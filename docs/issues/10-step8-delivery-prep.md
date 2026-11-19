@@ -49,14 +49,27 @@ Close the physical half of the sales scenario:
 
 ## 1b. Process comparison — SAP ↔ Odoo ↔ VOLUME (audited 2026-11-19)
 
-**SAP (standard):** the volume tool is **VL10 (delivery due list)** — mass
-creates outbound deliveries from orders filtered by shipping point/route/
-date; route comes from customer master onto the delivery; wave picking
-handles warehouse volume. In DSD, deliveries ride the tour machinery.
-*(Live check note: connected client 100 is a dev client — ME order tables
-are empty, so real daily volume is not measurable there; business scale =
-the Solico DSD fleet: hundreds of drivers × dozens of stops ⇒ thousands of
-orders/deliveries per day at go-live.)*
+**SAP (VERIFIED LIVE 2026-11-19, client 100):**
+- `LIPS` (delivery item) structure confirms the process model: order link
+  via `VGBEL/VGPOS` (originating doc/item ≈ Odoo picking's sale link),
+  plant/storage-location/batch, qty + sales/stock UoM, **over/under-delivery
+  tolerances (`UEBTO/UNTTO`) and partial-delivery control
+  (`KZTLF/ANTLF`)**, WM fields (storage type/bin), staging indicators,
+  availability-check linkage, **POD (proof-of-delivery) flags (`KZPOD`,
+  `PODREL`)**, and returns indicator (`SHKZG`).
+- **Custom gold:** `LIPS.ZZVGBEL_VF` = "Reference bill doc" — Solico's own
+  field linking delivery items to the original invoice ⇒ live validation
+  of our `dsd_reference_invoice_id` return design.
+- `TVLK`: 15+ delivery types in use (LF/LB/LD + specialized) — Odoo
+  equivalent = picking types (we seed 5; more can map at migration).
+- The volume tool in standard SAP is **VL10 (delivery due list)** — mass
+  order→delivery creation by shipping point/route/date; route determination
+  from customer master; wave picking for warehouse volume. In DSD,
+  deliveries ride the tour machinery.
+*(Live-check note: client 100 is a dev client — ME order tables empty, so
+real daily volume is not measurable there; scale assumed from the DSD
+fleet: hundreds of drivers × dozens of stops ⇒ thousands of
+orders/deliveries per day.)*
 
 **Odoo 20 (verified in source):**
 
