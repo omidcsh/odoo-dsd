@@ -2,7 +2,8 @@
 
 > Eighth development task (renumbered 2026-11-19: the monitoring console became step 7). Master plan: #1 · Builds on #5 (partner
 > geo/SA), #6 (presales day: tour/visit/orders), #7 (API v1.1).
-> Spec version: draft v1 (2026-11-19) — **pending approval before posting**.
+> Spec version: draft v1 (2026-11-19) — **ON HOLD per user 2026-11-19**
+> (do not post; distribution entry deliberately paused).
 
 ## Scope decision (the cut)
 

@@ -94,7 +94,7 @@ flowchart LR
   distribution) — tours overview + statuses + progress, salesmen on a live
   map (Leaflet; web_map is Enterprise), orders per salesman; post-tour
   backend rules (chatter summary, no auto-confirm)
-- [ ] **8. Distribution & van sales** — van stock/loading/COCI/reload +
+- [ ] **8. Distribution & van sales** *(draft ON HOLD 2026-11-19)* — van stock/loading/COCI/reload +
   mobile-API extension + **return fulfilment** (goods receipt, credit note —
   the FINAL return design; step 6's flagged order is explicitly interim)
 - [ ] **9. Settlement & payments** — COCI settlement, `account.payment`
