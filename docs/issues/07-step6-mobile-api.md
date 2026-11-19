@@ -267,6 +267,30 @@ goods — promotions step; v1 ships the data + payload only), promotions
 beyond native pricelist, multi-language payloads, pagination of the day
 package (catalog is paginated), rate limiting.
 
+## 5. MDSD coverage map (audited 2026-11-19 against the app's 37 managers)
+
+Covered by v1.1: Tour, Visit (+GPS/geofence), Order (create/cancel/copy/
+interim return), Pricing (server-side), ProposeOrder (item proposal),
+CaptureOnHand, DealCondition (data only), Material (/catalog), Customer
+(read), ReasonCode, DocumentNumber (Odoo sequences), Authorization
+(geofence part).
+
+Deferred BY DESIGN to their roadmap steps: COCI/Delivery/Inventory/Reload/
+Questions/Empties (step 7) · Collection (step 8) · Pdf/print (step 9) ·
+CRMActivity/CRMActivityJournal/TradeAsset/Expense/Message/Signature/OTP/
+Region/CPD-customer-creation (later) · BackupTableData/GenericDataTransport
+(meaningless under online-first D8) · ReferenceInvoice (with the final
+return design, step 7).
+
+**Known gaps — NOT in v1.1, registered so they are not lost (do NOT add
+without a scope decision):**
+
+| MDSD manager | Meaning | Disposition |
+|---|---|---|
+| `CreditLimit` + online open-items | preseller sees customer debt/credit before ordering | small future item after step 5 wires accounting; needs `account` data |
+| `ListingExclusion` | per-customer product listing (what may be sold to whom) | future filter on `/catalog`; needs listing master data first |
+| `Quota` (ZQUO conditions) | purchase quota per customer | future; depends on condition data we have not modeled |
+
 ## References
 
 - Decisions D5/D7/D8 (issue #1 log) · step 5 entities · PRESELLER-SCENARIO
