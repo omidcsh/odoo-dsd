@@ -49,7 +49,8 @@ don't touch an existing tour); admin unlock with guards.
 | `route_id` | m2o `dsd.route` | if source=route | populate source |
 | `plan_id` | m2o `dsd.visit.plan` | if source=plan | populate source |
 | `driver_id` | m2o `res.users` | yes | |
-| `state` | sel draft/downloaded/closed | yes | draft — per D7 collapsed ladder |
+| `company_id` | m2o `res.company` | — | env company (D11 multi-company anchor) |
+| `state` | sel draft/downloaded/closed | yes | draft — per D7 collapsed ladder; **lines lock on downloaded (D11)** |
 | `line_ids` | o2m `dsd.visit.list.line` | — | |
 | `tour_ids` | o2m `dsd.tour` | — | live = exactly 0 or 1 (guard, not DB) |
 
@@ -86,6 +87,7 @@ actual arrival/departure are separate fields on the visit — review 5b).
 | `vehicle_id` | m2o `fleet.vehicle` | no | **optional in presales** (review 5.1 — presellers carry no goods); domain `is_dsd_van`; becomes required when the van-stock step lands |
 | `state` | sel draft/running/done/cancelled | yes | draft — light ladder; SAP's 23 codes arrive with the gateway step |
 | `visit_ids` | o2m `dsd.visit` | — | |
+| `company_id` | m2o `res.company` | — | copied from list (D11) |
 | `active` | Boolean | — | True; False = logically deleted (admin unlock) |
 | `dsd_reset_reason` | Text | — | **required** on unlock (audit) |
 
@@ -93,7 +95,7 @@ actual arrival/departure are separate fields on the visit — review 5b).
 
 `tour_id` (cascade), `visit_id` Integer (**unique per tour**, 1..n at
 materialization), `sequence`, `partner_id` + `sales_area_id` (copied),
-`snapshot_name/address/city` Char (frozen from partner at creation —
+`company_id` (from tour), `snapshot_name/address/city/phone` Char (frozen from partner at creation —
 package 11-IMPL §2.2 semantics), `state` sel planned/arrived/done/skipped +
 `skip_reason`, `order_ids` o2m sale.order.
 
@@ -105,37 +107,64 @@ package 11-IMPL §2.2 semantics), `state` sel planned/arrived/done/skipped +
 
 ## 2. Behavior (must implement)
 
+**0. Business Rules — FINAL (D11, adopted 2026-11-19 after critical review
+of the external 7-phase program — full table):**
+
+| Topic | Rule |
+|---|---|
+| Visit vs Tour | independent entities, separate lifecycles |
+| Visit without an order | allowed — a done visit with zero orders is valid |
+| Orders per visit | many (o2m); order lifecycle is standard sale.order |
+| Same customer twice in one tour | allowed ONLY via different sales areas (list-line uniqueness); no other duplicate visits in one tour |
+| Re-download | returns the EXISTING tour (idempotent — D7/D9) |
+| Re-populate | draft lists only; rebuild = replace all lines in one write |
+| Pricing | ONLY from the visit's SA pricelist — **no automatic fallback** to partner property or company default (D11: silent fallback could pick ANOTHER SA's pricelist) |
+| Missing pricelist on SA | order creation BLOCKED with a clear error (`no_pricelist`) — never silently priced |
+| Empty list | download blocked (`empty_list`) — a tour must have ≥1 visit |
+| Cancel tour | explicit transition (draft/running → cancelled) with MANDATORY reason |
+| Multi-company | list/tour/visit are company-aware (`company_id`); cross-company data access is out of scope for v1 UI but the fields anchor the P1 record rules |
+
 1. **Populate from route** (server action on draft list): for
    `execution_date`'s weekday, take `route.customer_sequence_ids` rows whose
    validity covers the date → lines in membership sequence order.
 2. **Populate from plan**: plan lines whose `weekday_mask` has the date's
    bit and window covers it → lines in `sequence`.
 3. **Download = materialize** (`action_download` on list, draft only):
-   guarded by the DB partial-unique index above (concurrency-safe). Create
-   tour (state draft, chatter on) + copy lines to `dsd.visit` rows
-   (`visit_id` 1..n, sequence, partner, SA, snapshot chars) → list state
-   `downloaded`. **Idempotent at the API layer (step 6):** a repeated
-   download returns the EXISTING tour's package, it does not error.
-4. **Snapshot isolation**: after materialization, editing/deleting list
-   lines does NOT touch the tour's visits (they are copies).
+   guarded by the DB partial-unique index above (concurrency-safe) and the
+   D11 empty-list rule (`empty_list` error on zero lines). **ATOMIC (D11):**
+   tour + all visits are created in ONE transaction — a failure anywhere
+   leaves no partial tour. Create tour (state draft, chatter on) + copy
+   lines to `dsd.visit` rows (`visit_id` 1..n, sequence, partner, SA,
+   snapshot chars incl. phone) → list state `downloaded` and the **list
+   becomes READ-ONLY** (lines locked; D11). **Idempotent at the API layer
+   (step 6):** a repeated download returns the EXISTING tour's package, it
+   does not error.
+4. **Snapshot isolation**: after materialization, the tour is independent
+   of later changes to the LIST (locked anyway), the ROUTE (reordering,
+   membership edits) and the CUSTOMER master (snapshot chars frozen);
+   partner/SA links remain live references for reporting only.
 5. **Admin unlock** (`action_reset_download` on tour, admin group only):
    guards — (a) any visit has a linked `sale.order` → block; (b) any visit
    has operational activity (state ≠ planned, or GPS/timestamps recorded)
    → block unless the operator confirms an explicit force with full audit
    (chatter message; review 5.5); `dsd_reset_reason` **required**. On
    success: archive tour (`active=False`, state cancelled) → list back to
-   `draft`; a later download creates a NEW tour (new sequence); the
-   archived one remains as history.
+   `draft` and editable again; a later download creates a NEW tour (new
+   sequence); the archived one remains as history.
 6. **Day flow**: tour `draft → running` (open action) → `done` when all
-   visits are terminal. **Visit lifecycle is independent of orders**
-   (review 5.2): planned → arrived → done/skipped is driven by explicit
-   status changes (with reason for skip), NOT by order existence — a
-   successful visit with zero orders is a perfectly normal `done`. A visit
-   MAY carry multiple orders; orders keep their own standard lifecycle
-   (draft/confirmed/cancelled).
+   visits are terminal; `draft/running → cancelled` with mandatory reason.
+   **Visit lifecycle is independent of orders** (review 5.2) with an
+   explicit transition matrix (D11): `planned → arrived`, `planned →
+   skipped` (reason mandatory), `arrived → done`, `arrived → skipped`
+   (reason); `done`/`skipped` are terminal. Status changes are never
+   implied by order existence.
 7. **Order creation** (`action_create_order`): `sale.order` with partner +
-   **pricelist read from the visit's `partner_sales_area_id.pricelist_id`**
-   (fallback: partner property → company default — D9); `dsd_visit_id` set.
+   **pricelist read STRICTLY from the visit's
+   `partner_sales_area_id.pricelist_id`** — **NO automatic fallback (D11
+   corrects D9's earlier chain)**: if that SA has no pricelist, creation
+   is blocked with error `no_pricelist`. Additional D11 guards: the SA's
+   `sale_block` blocks creation (`customer_blocked`); products must be
+   active/sale-ok. `dsd_visit_id` set; a visit may carry many orders.
 
 **Audit (review 4.4, deepened round 2):** `mail.thread` + activity mixin on
 list/tour/visit; `tracking=True` captures **old value → new value, user,
@@ -177,10 +206,23 @@ Operations data: `dsd.visit.list`, `dsd.visit.list.line`, `dsd.tour`,
    has an order; force path with activity recorded
 6. partial unique (date, route) on duplicate active lists
 7. presale order from visit: `dsd_visit_id` set, partner set, **pricelist
-   = visit SA's pricelist** (fallback chain asserted); visible on visit;
-   visit state does NOT auto-change (independence rule 6)
+   = visit SA's pricelist**; visible on visit; visit state does NOT
+   auto-change (independence rule 6)
 8. tour close only when all visits terminal; a done visit with zero orders
    is valid
+9. **D11 — no-fallback pricing**: visit's SA without pricelist → order
+   creation raises `no_pricelist`; the partner property is NEVER consulted
+10. **D11 — empty list**: zero lines → download raises `empty_list`
+11. **D11 — list lock**: after download, line create/write/delete raises;
+    unlock restores editability
+12. **D11 — route-change isolation**: reorder/alter route memberships
+    after download → tour visits unchanged (copied at materialization)
+13. **D11 — blocks guard**: visit SA with `sale_block` → order creation
+    raises `customer_blocked`
+14. **D11 — cancel tour**: with mandatory reason; cancelled tour keeps
+    history; list re-download allowed only via admin unlock path
+15. **D11 — visit transitions**: invalid transitions (done → arrived,
+    planned → done) raise
 
 ## 6. Definition of done
 
@@ -188,8 +230,10 @@ Operations data: `dsd.visit.list`, `dsd.visit.list.line`, `dsd.tour`,
 - [ ] The scripted presales day passes as a test: list → download → open →
       2 visits with orders + 1 skipped → close (test 7/8 cover it)
 - [ ] `depends = base, product, stock, sale, fleet, mail` — nothing else
-- [ ] D7 rules each covered by a test (3/4/5); D9 pricing rule covered (7)
+- [ ] D7 rules each covered by a test (3/4/5); D9 pricing rule covered (7);
+      **D11 rules each covered (9–15)**
 - [ ] chatter/tracking present on list/tour/visit (audit)
+- [ ] `company_id` present on list/tour/visit (multi-company anchors)
 - [ ] PR to `main` with screenshots: list form, tour form with visits+orders
 
 ## Out of scope (later steps — do NOT build)
@@ -202,9 +246,11 @@ sync, `stock.picking.batch` integration.
 
 ## References
 
-- Decision D7 (issue #1 log) · M01 §3.5/§3.7 (1:1, copy-lines, snapshot
-  semantics — our ladder collapsed per D7) · 11-IMPL §2.1–2.2 (full tour/
-  visit wire model — deliberately deferred) · PRESELLER-SCENARIO §4–7
+- Decision D7 + **D11** (issue #1 log — business-rules finalization from
+  the critical review of the external 7-phase program, 2026-11-19) · M01
+  §3.5/§3.7 (1:1, copy-lines, snapshot semantics — our ladder collapsed
+  per D7) · 11-IMPL §2.1–2.2 (full tour/visit wire model — deliberately
+  deferred) · PRESELLER-SCENARIO §4–7
 - Prior art: v1 monorepo `dsd_tour` on `stock.picking.batch` (branch
   `dsd-v1`) — batch link consciously NOT adopted here (presales has no
   stock moves)
