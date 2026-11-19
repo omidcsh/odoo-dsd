@@ -47,7 +47,41 @@ Close the physical half of the sales scenario:
    document (held with van step).
 4. Runs appear in the monitoring console (#8) alongside sales tours.
 
-## 2. Mobile delivery API additions (v1.3 — extends #7)
+## 1b. Process comparison — SAP ↔ Odoo ↔ VOLUME (audited 2026-11-19)
+
+**SAP (standard):** the volume tool is **VL10 (delivery due list)** — mass
+creates outbound deliveries from orders filtered by shipping point/route/
+date; route comes from customer master onto the delivery; wave picking
+handles warehouse volume. In DSD, deliveries ride the tour machinery.
+*(Live check note: connected client 100 is a dev client — ME order tables
+are empty, so real daily volume is not measurable there; business scale =
+the Solico DSD fleet: hundreds of drivers × dozens of stops ⇒ thousands of
+orders/deliveries per day at go-live.)*
+
+**Odoo 20 (verified in source):**
+
+| Capability | Native state |
+|---|---|
+| Manual flow | order confirm → picking → validate (fine for 10s of orders) |
+| Bulk validate | ✓ `button_validate` is multi-record; batch has `action_assign` (reserve all) + **`action_done` (validate ALL pickings of the batch)** |
+| Auto/rule-based batch creation | **✗ none in core** — batches are built manually or by code |
+| VL10 equivalent (mass order→delivery + grouping) | **✗ none — this is exactly our "Prepare" action below** |
+
+**Volume requirements for the Prepare action (D13):**
+
+1. **Chunked**: creates pickings + the batch per `(route, date)` slice —
+   never one giant transaction across routes
+2. **Re-run safe**: preparing an already-prepared route+date adds only NEW
+   confirmed orders (keyed per order — no duplicate pickings, no duplicate
+   run)
+3. **Cron-ready**: same method callable from an ir.cron (nightly
+   auto-prepare) and from the UI button; >500 orders ⇒ queue-chunked
+   (Odoo `queue`-less v1: commit per route slice)
+4. Suite includes a **volume smoke test**: 100 confirmed orders across
+   3 routes prepare in one call; re-run adds 0 duplicates; batch
+   `action_assign`/`action_done` handle the set
+
+
 
 | Endpoint | In | Effect |
 |---|---|---|
@@ -82,7 +116,10 @@ Idempotency + envelope per #7 §1.9; driver scoping per #7 §2.1 (run
 5. doorstep return with reference invoice → return picking to WH; without
    valid reference → rejected
 6. run close blocked while a stop is open
-7. API (HttpCase): day/get scoping (driver B gets 404 on driver A's run),
+7. **volume smoke (D13)**: 100 confirmed orders / 3 routes → one prepare
+   call creates 3 runs, all pickings; re-run adds 0 duplicates; batch
+   action_assign + action_done complete the set
+8. API (HttpCase): day/get scoping (driver B gets 404 on driver A's run),
    stop confirm idempotent, GPS stamped
 
 ## 5. Definition of done
