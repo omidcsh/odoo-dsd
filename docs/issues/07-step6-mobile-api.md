@@ -109,7 +109,8 @@ SA). Odoo model:
 | `POST /dsd/api/v1/visit/status` | `{client_uuid, visit_id, state, reason?, gps?, occurred_at}` | planned/arrived/done/skipped (reason mandatory on skip); stamps times; on `arrived`, the server runs the **geo-fence check** (1.8) and stamps `geofence_ok`; **idempotent on `client_uuid`** (upsert) |
 | `POST /dsd/api/v1/visit/capture_on_hand` | `{client_uuid, visit_id, items: [{product_id, qty, uom_id, zero_count?}], not_taken?}` | records shelf-stock capture (1.4 `dsd.coh`); **idempotent on `client_uuid`** |
 | `POST /dsd/api/v1/location` | `{lat, lng, accuracy?, occurred_at}` | driver GPS ping (1.5) — app sends periodically during an open tour; lightweight, no response payload beyond the envelope |
-| `POST /dsd/api/v1/order` | `{client_uuid, visit_id, type: "order"\|"return", lines: [{product_id, qty, discount?}]}` | creates `sale.order` on the visit. **Return = POSITIVE quantities + `dsd_is_return=True`** (review 6.5 — no negative-qty hack). **EXPLICITLY INTERIM (MVP carrier)**: this is not the final return model — step 7 (distribution) delivers the real design: return delivery → goods receipt into stock → credit note/refund, connected to these flagged orders. Prices computed server-side; **idempotent on `client_uuid`** |
+| `POST /dsd/api/v1/returnable_invoices` | `{visit_id}` | lists the customer's recent POSTED invoices in the visit's SA that may be referenced by a return (MDSD `ReferenceInvoiceManager` — **REQUIRED per user 2026-11-19, no longer deferred**): `[{invoice_id, number, date, total, age_days}]` within `RETURN_REFERENCE_DAYS` (customizing, default 30) |
+| `POST /dsd/api/v1/order` | `{client_uuid, visit_id, type: "order"\|"return", reference_invoice_id?, lines: [{product_id, qty, discount?}]}` | creates `sale.order` on the visit. **Return = POSITIVE quantities + `dsd_is_return=True`** + **`dsd_reference_invoice_id`** (m2o `account.move`, optional but validated: must belong to the visit's customer+SA and be posted — MDSD returns carry the original invoice reference). Stock fulfilment of returns stays with step 8 (distribution): return delivery → goods receipt → credit note. Prices computed server-side; **idempotent on `client_uuid`** |
 | `POST /dsd/api/v1/order/cancel` | `{client_uuid, reason}` | `action_cancel` with guards (not delivered/invoiced); reason logged |
 | `POST /dsd/api/v1/order/copy` | `{source_client_uuid, new_client_uuid}` | copies lines to a NEW draft order on the same visit |
 
@@ -244,6 +245,10 @@ Partner without coordinates ⇒ check skipped, `geofence_ok = null`.
     rows per `LOCATION_RETENTION_DAYS`
 17. deal conditions: valid-for-customer+SA deals returned in `visit/detail`;
     expired/other-SA deals excluded
+18. reference invoice: `/returnable_invoices` lists only posted invoices of
+    the visit's customer+SA within the window; a return carrying a
+    `reference_invoice_id` from another customer/SA or unposted is rejected;
+    the created return stores the reference
 
 ## 4. Definition of done
 
@@ -279,8 +284,11 @@ Deferred BY DESIGN to their roadmap steps: COCI/Delivery/Inventory/Reload/
 Questions/Empties (step 7) · Collection (step 8) · Pdf/print (step 9) ·
 CRMActivity/CRMActivityJournal/TradeAsset/Expense/Message/Signature/OTP/
 Region/CPD-customer-creation (later) · BackupTableData/GenericDataTransport
-(meaningless under online-first D8) · ReferenceInvoice (with the final
-return design, step 7).
+(meaningless under online-first D8).
+**ReferenceInvoice moved INTO v1 scope** (user 2026-11-19): returns
+reference the original invoice — `/returnable_invoices` +
+`dsd_reference_invoice_id`; only the stock/credit fulfilment waits for
+step 8.
 
 **Known gaps — NOT in v1.1, registered so they are not lost (do NOT add
 without a scope decision):**

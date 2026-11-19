@@ -61,10 +61,11 @@ flowchart LR
     S4["4. Customer 360<br/>extras"]
     S5["5. Presales day<br/>list→tour→visits→orders"]
     S6["6. Mobile API v1<br/>(sales)"]
-    S7["7. Distribution & van sales<br/>+ return fulfilment"]
-    S8["8. Settlement &<br/>payments"]
-    S9["9. Reports &<br/>publish prep"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
+    S7["7. Monitoring console<br/>tours·map·orders"]
+    S8["8. Distribution & van sales<br/>+ return fulfilment"]
+    S9["9. Settlement &<br/>payments"]
+    S10["10. Reports &<br/>publish prep"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10
     style S1 fill:#d4edda,stroke:#28a745
 ```
 
@@ -89,12 +90,16 @@ flowchart LR
   `group_dsd_driver` role, idempotent verbs (download = find-or-materialize),
   paginated `/catalog`, prices in visit-SA context, cancel & copy,
   positive-qty interim returns
-- [ ] **7. Distribution & van sales** — van stock/loading/COCI/reload +
+- [ ] **7. Back-office monitoring console** (user 2026-11-19, before
+  distribution) — tours overview + statuses + progress, salesmen on a live
+  map (Leaflet; web_map is Enterprise), orders per salesman; post-tour
+  backend rules (chatter summary, no auto-confirm)
+- [ ] **8. Distribution & van sales** — van stock/loading/COCI/reload +
   mobile-API extension + **return fulfilment** (goods receipt, credit note —
   the FINAL return design; step 6's flagged order is explicitly interim)
-- [ ] **8. Settlement & payments** — COCI settlement, `account.payment`
+- [ ] **9. Settlement & payments** — COCI settlement, `account.payment`
   cash/cheque capture
-- [ ] **9. Reports & publish prep** — QWeb reports, README/icon, suite
+- [ ] **10. Reports & publish prep** — QWeb reports, README/icon, suite
   packaging, license pass
 
 ## References

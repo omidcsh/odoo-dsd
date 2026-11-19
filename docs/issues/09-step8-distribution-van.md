@@ -1,6 +1,6 @@
-# [Step 7 — DEV TASK] Distribution & van sales — material side (`dsd_core`)
+# [Step 8 — DEV TASK] Distribution & van sales — material side (`dsd_core`)
 
-> Seventh development task. Master plan: #1 · Builds on #5 (partner
+> Eighth development task (renumbered 2026-11-19: the monitoring console became step 7). Master plan: #1 · Builds on #5 (partner
 > geo/SA), #6 (presales day: tour/visit/orders), #7 (API v1.1).
 > Spec version: draft v1 (2026-11-19) — **pending approval before posting**.
 
@@ -9,7 +9,7 @@
 Distribution splits cleanly along M05/M08 lines: **this step = MATERIAL**
 (van stock, loading, van-sale delivery, FINAL return fulfilment, reload,
 check-out/in counts); **money (cash float, cheques, settlement run) = step
-8**. The M05 `CASH/` location joins step 8 with the float it carries.
+9**. The M05 `CASH/` location joins step 9 with the float it carries.
 
 - Odoo 20, Community-compatible, LGPL-3. **New dependency: `sale_stock`**
   (native delivery flow; pulls `account` for credit notes). `depends`
