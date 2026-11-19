@@ -1,162 +1,133 @@
-# [Step 8 — DEV TASK] Delivery preparation & mobile delivery readiness (`dsd_core`)
+# [Step 8 — DEV TASK] Delivery preparation — back-office only (`dsd_core`)
 
-> Eighth development task. Master plan: #1 · Builds on #6 (orders on
-> visits), #7 (API), #8 (monitoring). Van-sales stays ON HOLD; no money,
-> no invoicing, no COCI in this step.
-> Spec v2 (2026-11-19) — **rewritten after external review round 3**
-> (verdicts: all critical findings accepted; two of my factual claims
-> corrected against the Odoo source). **Pending approval.**
+> Eighth development task. Master plan: #1 · Builds on #6 (presales day)
+> and #8 (monitoring). **Scope per user 2026-11-19: BACK-OFFICE ONLY** —
+> what the office does after the salesmen's orders arrive, to have the
+> next day's deliveries READY. The mobile delivery scenario (app
+> endpoints, driver execution, doorstep returns) is a SEPARATE later
+> step and is deliberately NOT designed here.
+> Spec v3 (2026-11-19) — mobile-execution parts of v2 moved out.
+> **Pending approval.**
 
-## Architecture decisions (final — the three that shape everything)
+## Goal
 
-1. **`stock.picking.batch` = warehouse transfer grouping ONLY.** The DSD
-   operational concepts are first-class: **`dsd.delivery.run`** (may link a
-   batch for warehouse processing) and **`dsd.delivery.stop`**. Delivery
-   lifecycle never rides the batch state.
-2. **Delivery attempt ≠ stock cancellation.** A failed stop records an
-   ATTEMPT (reason, GPS, times) and touches no picking — the office decides
-   the picking's fate. Partial delivery records quantities + leaves the
-   backorder decision explicit.
-3. **Returns chain to the ORIGINAL DELIVERED PICKING** (native `return_id`
-   chain); the reference invoice is the COMMERCIAL anchor
-   (`dsd_reference_invoice_id`, mandatory) — server resolves
-   invoice → order → delivered picking(s).
+The moment the sales day ends (orders arrived online from the
+presellers' app), the office can — in Odoo, without any code:
 
-## 0. Odoo-native survey (verified in source, 2026-11-19 — incl. round-3 corrections)
+1. **Prepare**: turn the day's confirmed orders into delivery documents,
+   grouped into **Delivery Runs** and **Delivery Stops** (volume-safe)
+2. **Assign**: driver + vehicle per run
+3. **Make ready**: warehouse sees pick lists per stop, reservations
+   checked, shortages flagged
+4. **Watch**: runs/stops visible in the monitoring console (#8)
+
+No app, no GPS, no returns, no money, no van stock in this step.
+
+## 0. Odoo-native survey (verified in source, 2026-11-19)
 
 | Concern | Verdict |
 |---|---|
-| Order→picking | ✓ `sale_stock`, but an order yields **0..N pickings** (routes/product/warehouse dependent) — prepare works from EXISTING pickings, never assumes 1:1 |
-| Batch lifecycle | ✓ native `draft/in_progress/done/cancel`, **computed + readonly** — never redefined; DSD readiness is a separate flag on the run |
-| **Automatic batches** | ✓ **EXISTS in core** (review corrected my earlier claim): `stock.picking.type.auto_batch` groups by contact/destination-country/src-dest-location/waves (product/category/location/date). Criteria do NOT cover route/driver/DSD-date → **DSD Run orchestration stays custom**; native auto-batch may coexist for WH waves |
-| Batch membership | pickings must be compatible (company + operation type) → run grouping key = **(company, warehouse/op-type, route, date)**; driver assigned after grouping |
-| Bulk WH ops | `action_assign`/`action_done` = warehouse batch processing (bulk) — DISTINCT from mobile per-stop confirms; both tested separately |
-| Partial/backorder | ✓ native backorder on partial validate; **membership of the backorder picking in the run is an explicit field/decision, not an assumption** |
-| Returns | ✓ native return picking from the original (chain via `return_id/return_ids`) |
+| Order→picking | ✓ `sale_stock`; an order yields **0..N pickings** (routes/product/warehouse dependent) — prepare works from EXISTING pickings, never assumes 1:1 |
+| Grouping transfers | ✓ `stock.picking.batch` = warehouse transfer grouping (company + operation-type compatible members only); **native automatic batches exist** (`stock.picking.type.auto_batch`, criteria: contact/dest-country/src-dest-location/waves) — usable for WH-internal waves, **not** for route/driver/DSD-date runs → custom `dsd.delivery.run` rides ON a batch (optional) |
+| Batch lifecycle | native `draft/in_progress/done/cancel`, computed+readonly — never redefined; DSD readiness = separate flag |
+| Bulk WH ops | `action_assign`/`action_done` on the batch = warehouse-side bulk reserve/validate (reused for the pick list flow) |
 
-## 1. Data model (core of the rewrite)
+**New dependency: `sale_stock`.** `depends` =
+`base, product, stock, sale, fleet, mail, sale_stock`.
+
+## 1. Data model
 
 ### `dsd.delivery.run`
 `route_id`, `execution_date`, `company_id`, `warehouse_id` +
-`picking_type_id` (grouping key), `driver_id`, `vehicle_id` (optional),
-`batch_id` (m2o stock.picking.batch, optional — created/linked for WH
-processing), `dsd_ready` Boolean (operational readiness — NOT the batch
-state), `state` sel draft/ready/running/closed/cancelled (DSD lifecycle),
-`stop_ids` o2m. Chatter (audit).
+`picking_type_id` (grouping key — compatibility constraints respected),
+`driver_id`, `vehicle_id` (optional), `batch_id` (m2o
+stock.picking.batch — created/linked for WH processing; the run owns the
+DSD meaning, the batch owns the transfers), `dsd_ready` Boolean
+(operational readiness — independent of batch state), `state` sel
+draft/ready/cancelled (back-office lifecycle; execution states belong to
+the mobile-delivery step), `stop_ids` o2m. Chatter (audit: assignment,
+readiness, prepare runs).
 
-### `dsd.delivery.stop` — the physical customer visit of the deliveryman
-`run_id`, `partner_id` + `sales_area_id` + **snapshot chars** (name/
-address/phone — from the order/visit data, not live master),
-`sequence` (order derived from route membership), `picking_ids` m2m
-(multiple orders → multiple pickings per stop), `state` sel
-open/delivered/partial/failed/closed, `attempt_ids` o2m, gps/timestamps
-of last attempt. **Source of route/date (D14):** route = the presales
-TOUR's route (snapshot); delivery date = the order's
-`commitment_date` — NEVER recomputed from the customer's current master.
+### `dsd.delivery.stop` — one customer address on a run
+`run_id`, `partner_id` + `sales_area_id` + **snapshot chars**
+(name/address/phone — frozen from the order/visit data),
+`sequence` (from route membership order), `picking_ids` m2m (multiple
+orders → multiple pickings per stop), `state` sel open/prepared
+(back-office only; delivery outcomes arrive with the mobile step).
+**Source of dimensions (D14):** route = the presales TOUR's route
+(snapshot); execution date = the orders' `commitment_date` — NEVER
+recomputed from the customer's current master.
 
-### `dsd.delivery.attempt` — one physical knock on the door
-`stop_id`, `result` sel full/partial/failed, `reason_id` (required when
-failed), `gps` + `occurred_at` (client) + `received_at` (server),
-`line_ids` (for partial: picking, product, qty, uom, **lot/serial ids**),
-`client_uuid` (idempotent).
+### `dsd.delivery.prepare.request` + `.job` — volume-safe orchestration
+`date`, `warehouse_ids`, state, `job_ids` (slice = route × warehouse,
+own transaction per job, per-job state pending/running/done/error +
+error text). **No manual commits** — each job is an independent
+transaction; re-run admits only orders whose pickings are not yet in any
+run/stop (**per-order idempotency**, never per-batch existence). v1:
+jobs processed by cron + a UI trigger.
 
-### `dsd.delivery.prepare.request` — volume-safe orchestration
-`date`, `warehouse_ids`, `state`, `job_ids` o2m `dsd.delivery.prepare.job`
-(`slice` = route×warehouse, own transaction per job, `state`
-pending/running/done/error + error text). **No manual commits inside
-business methods** (review 3.3) — each job is an independent transaction;
-re-run picks up only orders NOT yet in a run/stop (per-order idempotency,
-not per-batch existence). v1: jobs processed by cron + UI trigger.
-
-## 2. Business rules (final)
+## 2. Business rules (final — back-office scope)
 
 | Topic | Rule |
 |---|---|
-| Stop formation | all confirmed orders' pickings for the same (partner, SA, address) on a route+date run → ONE stop, ordered by route membership sequence |
-| Readiness | `dsd_ready` when every stop has ≥1 picking assigned+reserved; shortages WARN (listed on run), never block silently |
-| Full delivery | attempt(full) → all stop pickings validated |
-| Partial | attempt(partial) with per-line qty (lots where tracked) → validated pickings create native backorders; **backorder membership: explicit `dsd_run_keep` decision — default stays on the SAME run for retry, office may move it to a later run** |
-| Failed | attempt(failed) + mandatory reason → **picking untouched**; stop state=failed; office picks: retry (reopen stop), cancel picking/order, or reschedule |
-| Return | reference invoice MANDATORY (no `?` — API fixed); server validates chain invoice→order→delivered picking(s); qty ≤ delivered − already-returned; duplicate return of the same picking lines rejected; receiving location default WH/STOCK (damaged-goods location choice arrives with the van step) |
-| Money | none — no invoice issuance, no payment, no COCI (unchanged) |
-| Multi-run | a driver may have several runs per day (multi-WH/multi-route) — API returns a list |
+| Input set | confirmed presale orders of the day, via their existing pickings |
+| Grouping key | (company, warehouse/op-type, route, execution date) → one run; incompatible pickings never share a run/batch |
+| Stop formation | all pickings for the same (partner, SA, address) in a run → ONE stop, ordered by route membership sequence |
+| Assignment | driver/vehicle per run after grouping; driver must be a permitted driver of the route (warning, not block) |
+| Readiness | `dsd_ready` when every stop has ≥1 picking, all assigned+reserved; shortages WARN (listed on the run) — never silently block |
+| Re-run | only NEW orders enter; nothing already prepared is duplicated or reordered |
+| Backorders | partial-delivery outcomes are mobile-step territory — this step only guarantees backorder pickings are visible and assignable to runs by the same prepare flow |
+| Money / returns / GPS | none in this step |
 
-## 3. Mobile API v1.3 (stop-centric — revised)
+## 3. Views (back-office)
 
-| Endpoint | In | Effect |
-|---|---|---|
-| `POST /delivery/day/get` | `{date}` | ALL runs of the caller: runs[] → stops[] (snapshot, state, sequence) → pickings[] (id, order, products w/ qty, uom, tracking needs) |
-| `POST /delivery/stop/confirm` | `{client_uuid, stop_id, result: full\|partial, lines?[{picking_id, product_id, qty, uom_id, lot_ids?}], gps?, occurred_at}` | full → validate all stop pickings; partial → validate given qtys (native backorders per explicit rule); stamps GPS+times on the attempt |
-| `POST /delivery/stop/fail` | `{client_uuid, stop_id, reason, gps?, occurred_at}` | records failed attempt — **no picking side-effects** |
-| `POST /delivery/return/pickup` | `{client_uuid, stop_id, reference_invoice_id, lines[]}` | builds native return picking(s) chained to the ORIGINAL delivered picking(s); commercial ref stored on the return order |
-| `POST /delivery/run/close` | `{client_uuid, run_id}` | run closed when all stops terminal; open backorders listed for the office |
+- DSD → **Operations → Delivery Runs**: list/kanban by state, filters
+  (date/route/driver/warehouse), "Today" default
+- Run form: header (route/date/driver/vehicle/warehouse), **Stops tab**
+  (sequence, snapshot, pickings per stop, shortage badges), readiness
+  panel + **Pick List / Load List** print per stop (QWeb, simple)
+- Prepare wizard: date + warehouses → creates the request; jobs and their
+  states visible on the request form
+- Runs appear in the monitoring console (#8) next to sales tours
 
-Cross-cutting: idempotent `client_uuid` on every verb; envelope per #7
-§1.9; driver scoping per #7 §2.1 (stop must belong to a run of
-`driver_id = uid`); client `occurred_at` + server `received_at` stored;
-UoM validated server-side (conversion where needed); lot/serial required
-per product tracking.
-
-## 4. Volume & performance (D13, revised per review)
-
-- prepare = request + per-slice jobs (own transactions, re-runnable,
-  per-order idempotency) — **no raw commits**; cron-driven in v1
-- native `auto_batch`/waves may handle WH-internal grouping where the
-  criteria suffice — runs stay the DSD layer
-- tests: 100 orders across **3 routes × 2 warehouses** (compatibility
-  key exercised); **multiple pickings per customer** (2 orders → 1 stop ×
-  2 pickings); multi-run per driver; re-run adds 0 duplicates; bulk WH
-  validation via `action_assign/action_done` tested SEPARATELY from
-  mobile per-stop confirms
-
-## 5. Tests (revised set)
+## 4. Tests (back-office only)
 
 1. grouping key: same route+date across 2 warehouses → 2 runs; same
-   warehouse different routes → 2 runs; incompatible pickings never share
-   a run/batch
-2. stop formation: customer with 2 confirmed orders → 1 stop, 2 pickings;
-   sequence follows route membership
-3. readiness warnings on shortage; `dsd_ready` gate
-4. full confirm validates all pickings; idempotent replay
-5. partial confirm → backorder picking; `dsd_run_keep` default keeps it
-   on the run; moving it to another run is an explicit office action
-6. fail → attempt recorded, picking state UNCHANGED; office retry reopens
-7. return: chain to original picking; over-return and double-return
-   rejected; reference invoice mandatory
-8. run/close blocked with open stops; open backorders reported
-9. API (HttpCase): multi-run day/get; driver scoping; lot-tracked
-   partial confirm carries lot ids; timestamps (client+server) stored
-10. volume smoke: 100 orders / 3 routes / 2 WH via prepare request+jobs;
-    re-run clean
+   warehouse different routes → 2 runs; incompatible pickings never merge
+2. stop formation: customer with 2 confirmed orders → 1 stop with 2
+   pickings; sequence follows route membership
+3. prepare request+jobs: 100 orders / 3 routes / 2 warehouses — all
+   admitted exactly once; re-run adds 0 duplicates; a failed job records
+   its error and does not poison siblings
+4. readiness: unreserved picking blocks `dsd_ready`; shortage listed as
+   warning
+5. dimension sources: run route = tour snapshot (changing the customer's
+   current route does not move the run); date = commitment_date
+6. driver-on-route warning fires for non-permitted driver (non-blocking)
 
-## 6. Definition of done
+## 5. Definition of done
 
 - [ ] Fresh-DB install; full suite green (steps 1–8)
-- [ ] Scripted delivery day as a test: prepare → 3 stops (full / partial
-      with backorder kept / failed then retried) + 1 doorstep return →
-      close run
+- [ ] Officer walkthrough as a scripted test: day's confirmed orders →
+      prepare → assign drivers → ready (with one shortage warning)
 - [ ] `depends = base, product, stock, sale, fleet, mail, sale_stock`
-- [ ] Runs/stops visible in the monitoring console (#8)
-- [ ] PR to `main` with screenshots (run form, stops, attempts, console)
+- [ ] Runs visible in the monitoring console
+- [ ] PR to `main` with screenshots (run form + stops, prepare wizard)
 
-## Out of scope (unchanged — review agreed)
+## Out of scope (explicitly — later steps)
 
-Van stock/van locations/loading/COCI/reload (held), invoicing & payments,
-route optimization, time-windows, POD photos/signatures, printing,
-empties. GPS + event timestamps REMAIN in scope.
+**Mobile delivery execution** (app endpoints v1.3, delivery attempts,
+GPS stamps, partial/failed outcomes, doorstep returns + the
+invoice→order→original-picking return chain, backorder-stays-or-moves
+decision) — its own step; van sales (held), invoicing/payments, route
+optimization, POD photos/signatures, printing beyond the simple pick
+list, empties.
 
 ## References
 
-- External review round 3 (2026-11-19) — all critical findings adopted;
-  two factual corrections verified in source: batch state
-  (`draft/in_progress/done/cancel`, computed+readonly) and **native
-  auto-batch exists** (`stock.picking.type.auto_batch` + grouping
-  criteria — insufficient for route/driver/DSD-date, hence custom runs)
-- SAP live check 2026-11-19: `LIPS` structure (VGBEL/VGPOS, tolerances,
-  partial control, POD flags, `SHKZG`), `TVLK` 15+ delivery types,
-  `LIPS.ZZVGBEL_VF` custom reference-invoice field — indicates the
-  business importance of invoice-referenced returns in Solico (claim
-  scoped: it does NOT by itself validate the Odoo return design; the
-  chain mapping in §2 does). Reproducible queries recorded in
-  `docs/reviews/sap-verification-2026-11-18.md`
-- v1 legacy batch mapping (branch `dsd-v1`) reused for WH processing
+- User directive 2026-11-19 (back-office only; mobile delivery is the
+  NEXT-next step) · round-3 review (accepted: run/stop as DSD concepts,
+  compatibility-keyed grouping, job-based prepare, native auto-batch
+  correction) · v1 legacy batch mapping (branch `dsd-v1`) reused for WH
+  processing · SAP live checks 2026-11-19 (LIPS/TVLK; queries recorded in
+  `docs/reviews/sap-verification-2026-11-18.md`)
