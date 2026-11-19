@@ -45,7 +45,7 @@ Login uses Odoo's own credentials — no parallel user store:
 
 | Concern | Odoo 20 native | Verdict |
 |---|---|---|
-| Transport | `odoo.http` controllers, `type="json"` routes | ✓ reuse |
+| Transport | `odoo.http` controllers, `type="jsonrpc"` routes (`type="json"` is a deprecated alias since 19.0 — source-verified 2026-11-19) | ✓ reuse |
 | Auth | **v1 decision: session-based only** — app calls standard `/web/session/authenticate`, keeps the session cookie, all routes `auth="user"`. API-key auth deferred to a later step with device registration + revocation design (review 6.1: one contract, not two maybes) | ✓ reuse |
 | Serialization | JSON request params / `request.make_response` | ✓ |
 | Verb style | Odoo routes accept any method; v1 convention: **POST + JSON body for everything** (actions are RPC-flavored) | ✓ document clearly for the app team |

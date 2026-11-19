@@ -85,9 +85,11 @@ reservation & staging only. No GPS, no returns, no money, no van stock.
 ## 2. Business rules (final)
 
 **Input domain (exact):** pickings where — sale order state = `sale`;
-picking `picking_type_id.code = 'outgoing'` AND
-`picking_type_entreprise_picking_type != internal/other DSD flows`
-(customer delivery op-types only); `company_id` + `warehouse_id` in the
+picking `picking_type_id.code = 'outgoing'` AND the op type is NOT a DSD-internal
+flow (customer delivery op-types only). *Correction (source-verified
+2026-11-19): Odoo 20 has NO `picking_type_entreprise_picking_type` field —
+batch features are gated by `stock.group_stock_picking_batch`, not a field;
+exclude DSD op types by seeded picking-type reference.*; `company_id` + `warehouse_id` in the
 request; `state not in (done, cancel)`; not already linked to a
 non-cancelled run (via `dsd.stop.picking_ids`). Orders whose pickings are
 all done/cancelled are naturally absent.

@@ -18,10 +18,12 @@ Live system: Solico SAP (client 100), via the vsp/mcphub MCP tools
 
 ## Scale reality (affects specs)
 
-- **~100 sales organizations** (TVKOT: Iran + all Iraq operations — Baghdad,
+- **146 sales organizations** (TVKOT, EN text rows — recounted 2026-11-19; the
+  earlier "~100" was an undercount; TVKOT: Iran + all Iraq operations — Baghdad,
   Karbala, Basrah, Erbil, Mosul, Najaf, Kirkuk…)
-- **52 distribution channels** (TVTWT), **25 divisions** (TSPAT),
-  **4,116 valid sales-area combos** (TVTA)
+- **52 distribution channels** (TVTWT), **26 divisions** (TSPAT, recounted
+  2026-11-19 — one added since the first count), **4,116 valid sales-area
+  combos** (TVTA)
 - Consequences: (a) manual combo creation is impossible — the migration
   needs a **bulk import from TVKOT/TVTWT/TSPAT/TVTA**; (b) combo pickers
   must be searchable/filterable, never flat dropdowns; (c) multi-company
@@ -80,3 +82,37 @@ uses plan line masks — route stays a pure grouping/ordering master.
 plan line mask overrides. Recommendation: **(a)** — matches the live
 system, removes duplication; populate-from-route then needs no weekday
 logic at all.
+
+## Re-verification round 3 — 2026-11-19 (issues 02–10 vs live SAP + Odoo 20 source)
+
+All SAP claims of issues 02–10 re-checked live (client 100). Field lists
+pulled from DD03L (ADT cannot serve `/DSD/*` namespace tables). Verdicts:
+
+| Claim | Evidence | Verdict |
+|---|---|---|
+| Catalogs client-level; TVTA combos | TVKOT 146 orgs (EN), TVTWT 52, TSPAT 26, TVTA 4,116 | ✅ |
+| KNVV blocks order/delivery/billing | AUFSD/LIFSD/FAKSD (+ PLTYP/KONDA/WAERS per SA) | ✅ |
+| Weekdays on plan header (D10) | `/DSD/VC_VPH`: MONDAY…SUNDAY + DATFR/DATTO + LIMFR/LIMTO + DRIVER1/2 + ROUTE + SA trio | ✅ |
+| Per-line rule override | `/DSD/VC_VPP`: RULEID_CUST + SEQU + KUNNR + VKORG/VTWEG/SPARTE per line + INACTIVE | ✅ |
+| Plan-type hub | `/DSD/VC_VPTYPE` rows MW1–MW5/YW1–YW5: VLHH/TRHH, SLTYP M1/M2/YW/YZ, CALTYP ZB/ZP/ZV | ✅ |
+| Tour born from route+plan-type | `/DSD/RP_TOH`: ROUTE, VPTYP, TPLST, STOPS, MAXTIME | ✅ |
+| Solico route master has NO weekdays | `ZSLC_DSD_ROUTES`: only MASIR, VKBUR, PRESELLER, PHONESELLER | ✅ |
+| Geo provenance (step 4) | `/DSD/RP_DEBGEO`: KUNNR, LATITUDE, LONGITUDE, PRECISID; T005H: CITYC+REGIO+BEZEI | ✅ |
+| COCI header shape (step 10/9) | `/DSD/ME_COCI_HD`: TOUR_ID, CHECK_ID, CHECK_DIRECT, CHECKER, CHECK_DATE/TIME, CHECK_TYPE, ME_ACTION, PLANT | ✅ |
+| Reference-invoice field (issue #9/step 8) | LIPS `ZZVGBEL_VF` (Z-enhancement) | ✅ |
+| Delivery types | TVLK: LF (outbound, VBTYP J), LR/NCR (returns, T), EL (inbound, 7) | ✅ |
+
+New finding: `/DSD/VC_VPH` and `/DSD/VC_VPP` both carry `/EMSE/*` append
+fields (`COL_CRM_ACT`, `CRM_ACT_MAX_DURATION`) — mobile-engine CRM-activity
+flags; relevant when the CRM-activity step lands.
+
+Odoo 20 source side (same day, pinned tree, release 20.0 FINAL): 13/16
+claims verified (auto_batch + criteria, batch action_assign/action_done +
+states + member compatibility, partially_available move-level, web_map =
+OEEL-1, ir.access.csv format, res.groups.privilege, `<list>`/`column_invisible`,
+models.Constraint, base partner lat/long, commitment_date, 0..N pickings,
+stock.lot/quant inventory/fleet driver_id, dateutil). Two spec errors found
+and fixed in the issues: `picking_type_entreprise_picking_type` does NOT
+exist in Odoo 20 (issue #9 input domain reworded — real gating is
+`stock.group_stock_picking_batch`); `type="json"` routes are a deprecated
+alias of `type="jsonrpc"` since 19.0 (issue #7 transport row updated).
