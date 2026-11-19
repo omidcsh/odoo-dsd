@@ -1,6 +1,6 @@
-# [Step 8 — DEV TASK] Distribution & van sales — material side (`dsd_core`)
+# [Step 9 — DEV TASK] Van sales (distribution material side) (`dsd_core`)
 
-> Eighth development task (renumbered 2026-11-19: the monitoring console became step 7). Master plan: #1 · Builds on #5 (partner
+> Ninth step (renumbered 2026-11-19: monitoring=7, delivery-prep=8). **ON HOLD per user.** Master plan: #1 · Builds on #5 (partner
 > geo/SA), #6 (presales day: tour/visit/orders), #7 (API v1.1).
 > Spec version: draft v1 (2026-11-19) — **ON HOLD per user 2026-11-19**
 > (do not post; distribution entry deliberately paused).

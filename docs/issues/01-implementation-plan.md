@@ -62,10 +62,11 @@ flowchart LR
     S5["5. Presales day<br/>list→tour→visits→orders"]
     S6["6. Mobile API v1<br/>(sales)"]
     S7["7. Monitoring console<br/>tours·map·orders"]
-    S8["8. Distribution & van sales<br/>+ return fulfilment"]
-    S9["9. Settlement &<br/>payments"]
-    S10["10. Reports &<br/>publish prep"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10
+    S8["8. Delivery prep<br/>+ mobile delivery"]
+    S9["9. Van sales<br/>(ON HOLD)"]
+    S10["10. Settlement &<br/>payments"]
+    S11["11. Reports &<br/>publish prep"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10 --> S11
     style S1 fill:#d4edda,stroke:#28a745
 ```
 
@@ -94,12 +95,17 @@ flowchart LR
   distribution) — tours overview + statuses + progress, salesmen on a live
   map (Leaflet; web_map is Enterprise), orders per salesman; post-tour
   backend rules (chatter summary, no auto-confirm)
-- [ ] **8. Distribution & van sales** *(draft ON HOLD 2026-11-19)* — van stock/loading/COCI/reload +
-  mobile-API extension + **return fulfilment** (goods receipt, credit note —
-  the FINAL return design; step 6's flagged order is explicitly interim)
-- [ ] **9. Settlement & payments** — COCI settlement, `account.payment`
-  cash/cheque capture
-- [ ] **10. Reports & publish prep** — QWeb reports, README/icon, suite
+- [ ] **8. Delivery preparation & mobile delivery** (user 2026-11-19:
+  no money yet) — delivery RUNS on `stock.picking.batch` from confirmed
+  presale orders (route+date+driver); mobile API v1.3: run download,
+  stop confirm (partial→backorder), fail-with-reason, doorstep returns
+  with reference invoice; no van stock, no invoicing
+- [ ] **9. Van sales (distribution material)** *(draft ON HOLD 2026-11-19)* —
+  van stock/loading/COCI/reload + return fulfilment (goods receipt, credit
+  note) — released when the user un-holds
+- [ ] **10. Settlement & payments** — COCI settlement, `account.payment`
+  cash/cheque capture (when sales starts collecting money)
+- [ ] **11. Reports & publish prep** — QWeb reports, README/icon, suite
   packaging, license pass
 
 ## References
